@@ -479,7 +479,7 @@ function ncn_civi_zoom_civicrm_pageRun(&$page) {
 
 
 function ncn_civi_zoom_civicrm_links($op, $objectName, $objectId, &$links, &$mask, &$values){
-  CRM_Core_Error::debug_var('op', $op);
+  //CRM_Core_Error::debug_var('op', $op);
   if($op == 'event.manage.list' && $objectName == 'Event'){
     // Add a link to view the zoom registrants
     $links[] = array(

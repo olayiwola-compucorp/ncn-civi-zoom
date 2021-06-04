@@ -52,6 +52,11 @@ function civicrm_api3_zoomevent_generatezoomattendance($params) {
 	$pastDate = $pastDateTimeFull->format('Y-m-d');
 	$currentDate = date('Y-m-d');
 
+//CRM_Core_Error::debug_var('pastDate', $pastDate);
+//CRM_Core_Error::debug_var('currentDate', $currentDate);
+
+// When $pastDate == $currentDate nothing is returned by api call
+// I would expect today's events to be returned but then they might not be finished
   $apiResult = civicrm_api3('Event', 'get', [
     'sequential' => 1,
     'end_date' => ['BETWEEN' => [$pastDate, $currentDate]],
@@ -274,7 +279,7 @@ function civicrm_api3_zoomevent_getrecentzoomregistrants($params) {
 				CRM_NcnCiviZoom_Utils::updateZoomParticipantJoinLink($participantDetail['participant_id'], $registrantsListConsolidated[$participantDetail['email']]['join_url']);
 			}
 			$recentRegistrants = CRM_NcnCiviZoom_Utils::filterZoomRegistrantsByTime($registrantsList, $params['mins']);
-			CRM_Core_Error::debug_var('recentRegistrants', $recentRegistrants);
+			//CRM_Core_Error::debug_var('recentRegistrants', $recentRegistrants);
 			if(!empty($recentRegistrants)){
 				$notesUpdateMessage = CRM_NcnCiviZoom_Utils::updateZoomRegistrantsToNotes($event['id'], $registrantsList);
 				$result[$event['id']]['Notes Update Message'] = $notesUpdateMessage;

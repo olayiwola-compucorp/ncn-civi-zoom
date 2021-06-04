@@ -231,7 +231,7 @@ class CRM_NcnCiviZoom_Utils {
     ]);
     $form->assign('event_id',$eventId);
     $form->assign('customIdUnmatched', 'custom_'.$cFDetails['id'].'_');
-    CRM_Core_Error::debug_var('no_of_unmatched', $no_of_unmatched);
+    //CRM_Core_Error::debug_var('no_of_unmatched', $no_of_unmatched);
     $form->assign('noOfUnmatched',$no_of_unmatched);
   }
 
