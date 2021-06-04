@@ -137,6 +137,10 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 			$participantId = $triggerData->getEntityData('participant')['participant_id'];
 			CRM_NcnCiviZoom_Utils::updateZoomParticipantJoinLink($participantId, $result['join_url']);
 		}
+		if(!empty($result['registrant_id'])){
+			$participantId = $triggerData->getEntityData('Participant')['participant_id'];
+			CRM_NcnCiviZoom_Utils::updateZoomParticipantRegistrantId($participantId, $result['registrant_id']);
+		}
 
 		// Added the registrant_id and event_id to the log
 		$msg = "Event Id is ".$event['id']. ". ";
