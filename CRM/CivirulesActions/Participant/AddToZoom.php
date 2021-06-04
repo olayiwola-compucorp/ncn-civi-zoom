@@ -200,8 +200,9 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 		])->get($url);
 		$result = $response->json();
 		$joinUrl = $result['join_url'];
+		$registrationUrl = $result['registration_url'];
 		$password = isset($result['password'])? $result['password'] : '';
-		return [$joinUrl, $password, $eventType];
+		return [$joinUrl, $password, $eventType, $registrationUrl];
 	}
 
 	public static function checkEventWithZoom($params){

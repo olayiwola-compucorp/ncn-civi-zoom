@@ -876,6 +876,7 @@ class CRM_NcnCiviZoom_Utils {
   public static function forUpgrade1007(){
     $cGName = CRM_NcnCiviZoom_Constants::CG_Event_Zoom_Notes;
     $cFName = CRM_NcnCiviZoom_Constants::CF_ZOOM_JOIN_LINK;
+    $cF2Name = CRM_NcnCiviZoom_Constants::CF_ZOOM_REGISTRATION_LINK;
 
     $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
     if(!empty($cGId)){
@@ -889,8 +890,19 @@ class CRM_NcnCiviZoom_Utils {
         'column_name' => 'zoom_join_link',
         'is_view' => 1,
       );
+      $apiParams2 = array(
+        'sequential' => 1,
+        'custom_group_id' => $cGId,
+        'label' => "Zoom Register Link",
+        'name' => $cF2Name,
+        'data_type' => "String",
+        'html_type' => "Text",
+        'column_name' => 'zoom_register_link',
+        'is_view' => 1,
+      );
       try {
         $apiResult = civicrm_api3('CustomField', 'create', $apiParams);
+        $apiResult2 = civicrm_api3('CustomField', 'create', $apiParams2);
       } catch (Exception $e) {
         CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
         CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: create');

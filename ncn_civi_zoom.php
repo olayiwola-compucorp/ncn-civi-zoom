@@ -425,10 +425,15 @@ function ncn_civi_zoom_civicrm_postProcess($formName, $form) {
       // Trying to store the zoom joining link also
       $cGName = CRM_NcnCiviZoom_Constants::CG_Event_Zoom_Notes;
       $cFName = CRM_NcnCiviZoom_Constants::CF_ZOOM_JOIN_LINK;
+      $cF2Name = CRM_NcnCiviZoom_Constants::CF_ZOOM_REGISTER_LINK;
       $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
       try {
         $cFDetails = civicrm_api3('CustomField', 'get', [
           'name' => $cFName,
+          'custom_group_id' => $cGId,
+        ]);
+        $cF2Details = civicrm_api3('CustomField', 'get', [
+          'name' => $cF2Name,
           'custom_group_id' => $cGId,
         ]);
       } catch (Exception $e) {
@@ -436,12 +441,15 @@ function ncn_civi_zoom_civicrm_postProcess($formName, $form) {
         CRM_Core_Error::debug_var('ncn_civi_zoom_civicrm_postProcess api calling error, entity', 'CustomField');
         CRM_Core_Error::debug_var('ncn_civi_zoom_civicrm_postProcess api calling error, action', 'get');
       }
-      if(!empty($cFDetails['id'])){
+      if(!empty($cFDetails['id']) && !empty($cF2Details['id'])){
         $object = new CRM_CivirulesActions_Participant_AddToZoom;
         $object->event_id = $form->_id;
         $joinUrl = CRM_CivirulesActions_Participant_AddToZoom::getJoinUrl($object);
         if(!empty($joinUrl[0])){
           $createApiParams['custom_'.$cFDetails['id']] = $joinUrl[0];
+        }
+        if(!empty($joinUrl[3])){
+          $createApiParams['custom_'.$cF2Details['id']] = $joinUrl[3];
         }
       }
 
