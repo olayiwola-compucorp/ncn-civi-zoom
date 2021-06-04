@@ -262,6 +262,7 @@ function civicrm_api3_zoomevent_getrecentzoomregistrants($params) {
 		$registrantsList = CRM_CivirulesActions_Participant_AddToZoom::getZoomRegistrants($event['id']);
 		if(!empty($registrantsList)){
 			CRM_NcnCiviZoom_Utils::insertZoomRegistrantsInToCivi($event['id'], $registrantsList);
+			CRM_NcnCiviZoom_Utils::updateMissingZoomRegistrantsStatusToCancelledThroughZoom($event['id'], $registrantsList);
 			$registrantsEmailList = $registrantsListConsolidated = array();
 			foreach ($registrantsList as $registrant) {
 				$registrantsListConsolidated[$registrant['email']] = $registrant;

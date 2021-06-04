@@ -1195,6 +1195,51 @@ class CRM_NcnCiviZoom_Utils {
   }
 
   /*
+   * Function to update participant status of zoom registrants that are no longer returned by zoom api
+   * Assumption is that they cancelled through zoom
+   */
+  public static function updateMissingZoomRegistrantsStatusToCancelledThroughZoom($eventId = NULL, $registrantsList = array()){
+    if(empty($eventId)){
+      CRM_Core_Error::debug_log_message('Required Params Missing or not in proper format in  '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('eventId', $eventId);
+      return FALSE;
+    }
+    if (!civicrm_api3('ParticipantStatusType', 'getcount', ['name' => "Cancelled through zoom",])) {
+      $result = civicrm_api3('ParticipantStatusType', 'create', [
+        'name' => "Cancelled through zoom",
+        'label' => "Cancelled through zoom",
+        'class' => "Negative",
+        'is_reserved' => 1,
+        'is_counted' => 0,
+        'visibility_id' => "admin",
+      ]);
+    }
+    $tableName = CRM_NcnCiviZoom_Constants::ZOOM_REGISTRANTS_TABLE_NAME;
+    $dao = CRM_Core_DAO::executeQuery('SELECT * FROM ' . $tableName . ' WHERE event_id = ' . $eventId);
+    while ($dao->fetch()) {
+    CRM_Core_Error::debug_var('email', $dao->email);
+      // If table entry not in registrantsList then update status to CancelledThroughZoom
+      if (!in_array($dao->email, array_column($registrantsList, 'email'))) {
+        // Get participant id
+        $query = "SELECT participant.id
+                  FROM civicrm_participant participant
+                  LEFT JOIN civicrm_contact contact on contact.id = participant.contact_id
+                  LEFT JOIN civicrm_email email on (email.contact_id = contact.id AND is_primary = 1)
+                  WHERE email.email = '" . $dao->email . "'" .
+                ' AND participant.event_id = ' . $eventId;
+        $participants_dao = CRM_Core_DAO::executeQuery($query);
+        while ($participants_dao->fetch()) {
+          // Update status to Cancelled
+          $result = civicrm_api3('Participant', 'create', [
+            'id' => $participants_dao->id,
+            'status_id' => 'Cancelled through zoom',
+          ]);
+        }
+      }
+    }
+  }
+
+  /*
    * Function to get Zoom Registrant Details By Id
    */
   public static function getZoomRegistrantDetailsById($Id){
