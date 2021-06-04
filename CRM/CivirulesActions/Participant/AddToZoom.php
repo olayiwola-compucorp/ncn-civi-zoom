@@ -134,7 +134,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 
 		CRM_Core_Error::debug_var('Zoom addParticipant result', $result);
 		if(!empty($result['join_url'])){
-			$participantId = $triggerData->getEntityData('participant')['participant_id'];
+			$participantId = $triggerData->getEntityData('Participant')['participant_id'];
 			CRM_NcnCiviZoom_Utils::updateZoomParticipantJoinLink($participantId, $result['join_url']);
 		}
 		if(!empty($result['registrant_id'])){
