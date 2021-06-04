@@ -7,7 +7,7 @@ This extension will connect CiviEvents with Zoom, allowing registrations for zoo
 # Symbiotic fork
 * Correct an entity name that broke an api call
 * Custom fields (zoom register link et participant zoom registrant id) to produce a cancel link to include in event reminders {event.custom_xx}/success?act=cancel&user_id={participant.custom_yy}
-* Syncronize zoom cncellations back to CiviEvents and update participant status
+* Syncronize zoom cancellations back to CiviEvents and update participant status
 
 ## Requirements
 
