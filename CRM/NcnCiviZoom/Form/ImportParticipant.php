@@ -97,16 +97,18 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
       CRM_Core_Error::debug_log_message('Api Entity: Event , Action: get');
     }
 
+    $eventId = $zoomRegistrant['event_id'];
+    $contactId = $values['change_contact_id'];
+
     $createParticipantApiParams = array(
-    	'event_id' => $zoomRegistrant['event_id'],
-    	'contact_id' => $values['change_contact_id'],
+      'event_id' => $eventId,
+      'contact_id' => $contactId,
       'status_id' => 'Registered',
     );
     if(!empty($eventDetails['values'][0]['default_role_id'])){
       $createParticipantApiParams['role_id'] = $eventDetails['values'][0]['default_role_id'];
     }
 
-    CRM_Core_Error::debug_var('Api createParticipantApiParams', $createParticipantApiParams);
     $result['is_error'] = TRUE;
     try {
     	$result = civicrm_api3('Participant', 'create', $createParticipantApiParams);
@@ -118,6 +120,33 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
 
     if (!$result['is_error']) {
       CRM_Core_Session::setStatus(ts('Participant added successfully.'), ts('Added'), 'success');
+      // Retrieving the Zoom Join Link
+      $pId = $result['id'];
+      $zoom_join_link = '';
+      $settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
+      $locationTypeId = $settings['import_email_location_type'];
+      if(empty($locationTypeId)){
+        $locationTypeId = CRM_Core_DAO::singleValueQuery("SELECT id FROM civicrm_location_type WHERE is_default = 1");
+      }
+      $queryParams = array(
+        1 => array($contactId, 'Integer'),
+        2 => array($locationTypeId, 'Integer'),
+      );
+      $query = "SELECT email FROM civicrm_email WHERE (contact_id = %1 AND location_type_id = %2) LIMIT 1";
+      $emailId = CRM_Core_DAO::singleValueQuery($query, $queryParams);
+      if(!empty($emailId)){
+        $zoomRegistrantsList = CRM_CivirulesActions_Participant_AddToZoom::getZoomRegistrants($eventId);
+        foreach ($zoomRegistrantsList as $key => $registrant) {
+          if($registrant['email'] == $emailId){
+            $zoom_join_link = $registrant['join_url'];
+            break;
+          }
+        }
+      }
+      // Update the zoom join link against the participant
+      if(!empty($zoom_join_link)){
+        CRM_NcnCiviZoom_Utils::updateZoomParticipantJoinLink($pId, $zoom_join_link);
+      }
     } else {
       CRM_Core_Session::setStatus(ts('Unable add the participant.'), ts('Error'), 'error');
     }
