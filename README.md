@@ -74,7 +74,7 @@ More details [here](https://docs.civicrm.org/sysadmin/en/latest/customize/extens
 ![Screenshot of add common zoom settings](images/add-common-zoom-settings.jpg)
 
 * Navigate  to the zoom sync data settings as **Administer >> Zoom Settings >> Zoom Data Sync Settings**.
-* This page shows the list  of fields available in the zoom api for a Meeting or a Webinar.![Screenshot of sync zoom data page](images/sync-zoom-data-settings-page.PNG)
+* This page shows the list  of fields available in the zoom api for a Meeting or a Webinar.![Screenshot of sync zoom data page](images/sync-zoom-data-settings-page.png)
 * You can select the fields you wanted to sync with the civicrm participants and save it. These selected fields are created as custom fields under the custom group 'Zoom Data Sync' against particpants.
 
 ### Configure CiviRules to send participant information to Zoom
