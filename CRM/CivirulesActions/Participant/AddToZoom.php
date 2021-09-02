@@ -338,7 +338,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
     return $zoomRegistrantsList;
   }
 
-  public static function getZoomAttendeeOrAbsenteesList($eventId, $pageSize = 150){
+  public static function getZoomAttendeeOrAbsenteesList($eventId, $pageSize = 300){
     if(empty($eventId)){
       return [];
     }
@@ -351,23 +351,44 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	  }
 		$url = $array_name = $key_name = '';
 		$accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($eventId);
+	        $token = $object->createJWTToken($accountId);
 		$settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
 		CRM_NcnCiviZoom_Utils::checkPageSize($pageSize);
+
 		if(!empty($meetingId)){
-	  	$url = $settings['base_url'] . "/past_meetings/$meetingId/participants?&page_size=".$pageSize;
+                //$url = $settings['base_url'] . "/past_meetings/$meetingId/participants?&page_size=".$pageSize;
+	        $urls = [];
 	  	$array_name = 'participants';
 	  	$key_name = 'user_email';
+
+	        // Get meeting instances
+                $instances_url = $settings['base_url'] . "/past_meetings/$meetingId/instances";
+                $instances_response = Zttp::withHeaders([
+                    'Content-Type' => 'application/json;charset=UTF-8',
+	            'Authorization' => "Bearer $token"
+                ])->get($instances_url);
+                $instances_result = $instances_response->json();
+                //Civi::log()->warning(print_r('instances', 1));			
+                //Civi::log()->warning(print_r($instances_result, 1));			
+	        foreach ($instances_result['meetings'] as $key => $instance) {
+                  //Civi::log()->warning(print_r('instance uuid: ' . $instance['uuid'], 1));			
+	          $urls[] = $settings['base_url'] . "/past_meetings/" . $instance['uuid'] . "/participants?&page_size=".$pageSize;
+	        }
+
 		} elseif (!empty($webinarId)) {
 	  	$url = $settings['base_url'] . "/past_webinars/$webinarId/absentees?&page_size=".$pageSize;
+		$urls = [$url];
 	  	$array_name = 'absentees';
 	  	$key_name = 'email';
 		}
-	  $token = $object->createJWTToken($accountId);
+
+       foreach($urls as $key => $url) {
+          //Civi::log()->warning(print_r($url, 1));			
 	  $result = [];
 	  $next_page_token = null;
 		do {
 			$fetchUrl = $url.$next_page_token;
-		  $token = $object->createJWTToken($accountId);
+		        $token = $object->createJWTToken($accountId);
 			$response = Zttp::withHeaders([
 				'Content-Type' => 'application/json;charset=UTF-8',
 				'Authorization' => "Bearer $token"
@@ -382,6 +403,8 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 			}
 			$next_page_token = '&next_page_token='.$result['next_page_token'];
 		} while ($result['next_page_token']);
+       }
+
     return $returnZoomList;
   }
 
