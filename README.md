@@ -4,6 +4,11 @@ Civirules Conditions/Actions that talk with Zoom developed for NCN.
 # What it does
 This extension will connect CiviEvents with Zoom, allowing registrations for zoom events to be captured in your CiviCRM install via your website. This has a multitude of benefits, including GDPR compliance, using Zooms workflow, removing the need to manually export/import as well as being able to manage events in the same way you would any other CiviCRM events. This will also pull the registrants' details for the upcoming zoom based events and update them into the 'Event Zoom Notes' field of each event.
 
+# Symbiotic fork
+* Correct an entity name that broke an api call
+* Custom fields (zoom register link et participant zoom registrant id) to produce a cancel link to include in event reminders {event.custom_xx}/success?act=cancel&user_id={participant.custom_yy}
+* Syncronize zoom cancellations back to CiviEvents and update participant status
+
 ## Requirements
 
 * PHP v7.0+
