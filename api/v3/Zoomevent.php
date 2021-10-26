@@ -65,6 +65,7 @@ function civicrm_api3_zoomevent_generatezoomattendance($params) {
 		CRM_Core_Error::debug_var('eventId', $eventId);
 		$list = CRM_CivirulesActions_Participant_AddToZoom::getZoomAttendeeOrAbsenteesList($eventId);
 		if(empty($list)){
+			CRM_Core_Error::debug_var('No participants found in the zoom for the event Id: ', $eventId);
 			continue;
 		}
 		$webinarId = getWebinarID($eventId);

@@ -354,7 +354,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	  	$key_name = 'user_email';
 		} elseif (!empty($webinarId)) {
 	  	$url = $settings['base_url'] . "/past_webinars/$webinarId/absentees?&page_size=".$pageSize;
-	  	$array_name = 'absentees';
+	  	$array_name = 'registrants';
 	  	$key_name = 'email';
 		}
 	  $token = $object->createJWTToken($accountId);
