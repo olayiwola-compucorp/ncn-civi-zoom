@@ -372,7 +372,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 			if(!empty($result[$array_name])){
 				$list = $result[$array_name];
 				foreach ($list as $item) {
-					$returnZoomList[] = $item[$key_name];
+					$returnZoomList[] = strtolower($item[$key_name]);
 				}
 			}
 			$next_page_token = '&next_page_token='.$result['next_page_token'];
@@ -428,6 +428,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 			if(!empty($result[$array_name])){
 				$list = $result[$array_name];
 				foreach ($list as $item) {
+					$item[$key_name] = strtolower($item[$key_name]);
 					$returnZoomList[$item[$key_name]][] = $item;
 				}
 			}
@@ -455,6 +456,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 				if(!empty($result[$array_name])){
 					$list = $result[$array_name];
 					foreach ($list as $item) {
+						$item[$key_name] = strtolower($item[$key_name]);
 						$returnZoomList[$item[$key_name]][] = $item;
 					}
 				}
