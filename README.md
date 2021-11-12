@@ -87,6 +87,11 @@ Once you've decided this you can create a new CiviRule as per the below.
 ![Screenshot of add civirules condition](images/civiruleCondition.png)
 ![Screenshot of add civirules actions](images/civiruleAction.png)
 
+* If you have civirules logger installed in your CRM then you will be able to see the logs of every api call made to push the participant(s) from civi to zoom.
+* The civi rules logs can be accessed as given in the below image in the civirule edit page.
+![Screenshot of add civirules actions](images/civirules-logger.png)
+* These logs can be used to check whether the civi participants have been pushed to the zooom or not successfully.
+
 
 ## Enabling the integration for a CiviEvent
 ### Configuring the Zoom Event
