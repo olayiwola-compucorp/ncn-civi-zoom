@@ -93,9 +93,9 @@ Once you've decided this you can create a new CiviRule as per the below.
 ![Screenshot of add civirules actions](images/civirules-logger.png)
 * These logs can be used to check whether the civi participants have been pushed to the zooom or not successfully.
 * Also if there are any failure while pushing a participant to zoom in the last 48 hours then an alert message will be notified once you login as shown in the screenshot below.
-![Screenshot of system status alert 1](images/system-status-alert-1.jng)
+![Screenshot of system status alert 1](images/system-status-alert-1.jpg)
 * The alert message will also be added to the System status check page which can be accessed by navigating to **Administer>>Administration console>>System Status**.
-![Screenshot of system status alert 2](images/system-status-alert-2.jng)
+![Screenshot of system status alert 2](images/system-status-alert-2.jpg)
 
 
 ## Enabling the integration for a CiviEvent
