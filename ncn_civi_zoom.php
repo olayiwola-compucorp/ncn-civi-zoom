@@ -481,3 +481,106 @@ function ncn_civi_zoom_civicrm_links($op, $objectName, $objectId, &$links, &$mas
     );
   }
 }
+
+
+/**
+ * Implementation of hook_civicrm_check
+ *
+ * Add a check to the status page/System.
+ */
+function ncn_civi_zoom_civicrm_check(&$messages, $statusNames = [], $includeDisabled = false) {
+
+  if (CRM_Extension_System::singleton()->getMapper()->isActiveModule('civiruleslogger')) {
+    $zoomRegCheckStatusName = 'NcnCiviZoomRegistrantPushCheck';
+
+    // If performing your check is resource-intensive, consider bypassing if disabled
+    if (!$includeDisabled) {
+      $disabled = \Civi\Api4\StatusPreference::get()
+        ->setCheckPermissions(FALSE)
+        ->addWhere('is_active', '=', FALSE)
+        ->addWhere('domain_id', '=', 'current_domain')
+        ->addWhere('name', '=', $zoomRegCheckStatusName)
+        ->execute()->count();
+      if ($disabled) {
+        return;
+      }
+    }
+
+    $logs = [];
+    $infoLevel = \PSR\Log\LogLevel::INFO;
+    $alertLevel = \PSR\Log\LogLevel::ALERT;
+
+    // Get zoom rule action name
+    $jsonFile = __DIR__ . '/civirules_actions.json';
+    $actions = json_decode(file_get_contents($jsonFile), true);
+    $actionName = '';
+    foreach($actions as $action) {
+      $actionName = $action['name'];
+    }
+
+    // Get zoom rule action Id
+    $rules = [];
+    $zoomActionId = null;
+    if(!empty($actionName)){
+      $getZoomActionIdQuery = 'SELECT id FROM civirule_action WHERE name = %1';
+      $qParams = array(1 => array($actionName, 'String'));
+      try {
+        $zoomActionId = CRM_Core_DAO::singleValueQuery($getZoomActionIdQuery, $qParams);
+      } catch (Exception $e) {
+        CRM_Core_Error::debug_log_message('getZoomActionIdQuery failed in ncn_civi_zoom_civicrm_check');
+        CRM_Core_Error::debug_var('getZoomActionIdQuery', $getZoomActionIdQuery);
+        CRM_Core_Error::debug_var('qParams', $qParams);
+      }
+      // Get rule Ids for the zoom action
+      if(!empty($zoomActionId)){
+        $getZoomRuleIdQuery = 'SELECT rule_id FROM civirule_rule_action WHERE action_id = %1';
+        $qParams = array(1 => array($zoomActionId, 'Integer'));
+        try {
+          $dao = CRM_Core_DAO::executeQuery($getZoomRuleIdQuery, $qParams);
+          while ($dao->fetch()) {
+            $rules[] = $dao->toArray();
+          }
+        } catch (Exception $e) {
+          CRM_Core_Error::debug_log_message('getZoomRuleIdQuery failed in ncn_civi_zoom_civicrm_check');
+          CRM_Core_Error::debug_var('getZoomRuleIdQuery', $getZoomRuleIdQuery);
+          CRM_Core_Error::debug_var('qParams', $qParams);
+        }
+      }
+    }
+
+    // Check if there are any alert level messages in the last 48hrs for each rule
+    foreach ($rules as $rule) {
+      $days = 2;
+      $currentDateTimeFull = new DateTime();
+      $pastDateTimeFull = $currentDateTimeFull->modify("-".$days." days");
+      $pastDateTime = $pastDateTimeFull->format('Y-m-d H:i:s');
+      $loggerQuery = "SELECT * FROM civirule_civiruleslogger_log WHERE rule_id = %1 AND level != %2 AND timestamp > %3";
+      $qParams = array(
+        1 => array($rule['rule_id'], 'Integer'),
+        2 => array($infoLevel, 'String'),
+        3 => array($pastDateTime, 'String')
+      );
+      try {
+        $dao = CRM_Core_DAO::executeQuery($loggerQuery, $qParams);
+        while ($dao->fetch()) {
+          $logs[] = $dao->toArray();
+        }
+      } catch (Exception $e) {
+        CRM_Core_Error::debug_log_message('loggerQuery failed in ncn_civi_zoom_civicrm_check');
+        CRM_Core_Error::debug_var('loggerQuery', $loggerQuery);
+        CRM_Core_Error::debug_var('qParams', $qParams);
+      }
+    }
+
+    // Add to system status if any logs available
+    if (!empty($logs)) {
+      $messages[] = new CRM_Utils_Check_Message(
+        $zoomRegCheckStatusName,
+        ts("There are some issues in pushing some participants to zoom. Please check civirules logger for more details."),
+        ts("Ncn Civi Zoom - Participants Couldn't be added to zoom"),
+        $alertLevel,
+        'fa-video-camera'
+      );
+    }
+  }
+}
