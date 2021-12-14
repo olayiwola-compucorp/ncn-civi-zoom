@@ -521,30 +521,53 @@ class CRM_NcnCiviZoom_Utils {
   public static function forUpgrade1003(){
     $customGroupName = CRM_NcnCiviZoom_Constants::CG_Event_Zoom_Notes;
     $customFieldName = CRM_NcnCiviZoom_Constants::CF_Event_Zoom_Notes;
+    $cGId = self::checkIfCGExists($customGroupName);
+    if(empty($cGId)){
+      $apiParams = array(
+        'sequential' => 1,
+        'title' => "Event Zoom Notes",
+        'extends' => "Event",
+        'name' => $customGroupName,
+      );
 
-    $customGroupDetails = civicrm_api3('CustomGroup', 'create', [
-      'sequential' => 1,
-      'title' => "Event Zoom Notes",
-      'extends' => "Event",
-      'name' => $customGroupName,
-    ]);
+      try {
+        $customGroupDetails = civicrm_api3('CustomGroup', 'create', $apiParams);
+      } catch (Exception $e) {
+        CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
+        CRM_Core_Error::debug_log_message('Api entity: CustomGroup , Api Action: create');
+        CRM_Core_Error::debug_var('apiParams', $apiParams);
+        CRM_Core_Error::debug_var('Api Error details', $e);
+      }
+    }else{
+      CRM_Core_Error::debug_log_message("Custom Group already exists for Group Name: ".$customGroupName);
+    }
 
-    $apiParams = array(
-      'sequential' => 1,
-      'custom_group_id' => $customGroupDetails['values'][0]['id'],
-      'label' => "Event Zoom Notes",
-      'name' => $customFieldName,
-      'data_type' => "Memo",
-      'html_type' => "TextArea",
-      'is_view' => 1,
-    );
-    try {
-      $apiResult = civicrm_api3('CustomField', 'create', $apiParams);
-    } catch (Exception $e) {
-      CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
-      CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: create');
-      CRM_Core_Error::debug_var('apiParams', $apiParams);
-      CRM_Core_Error::debug_var('Api Error details', $e);
+    $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $customGroupName, 'id', 'name');
+    if(!empty($cGId)){
+      $cFId = self::checkIfCFExists($customGroupName ,$customFieldName);
+      if(empty($cFId)){
+        $apiParams = array(
+          'sequential' => 1,
+          'custom_group_id' => $cGId,
+          'label' => "Event Zoom Notes",
+          'name' => $customFieldName,
+          'data_type' => "Memo",
+          'html_type' => "TextArea",
+          'is_view' => 1,
+        );
+        try {
+          $apiResult = civicrm_api3('CustomField', 'create', $apiParams);
+        } catch (Exception $e) {
+          CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
+          CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: create');
+          CRM_Core_Error::debug_var('apiParams', $apiParams);
+          CRM_Core_Error::debug_var('Api Error details', $e);
+        }
+      }else{
+        CRM_Core_Error::debug_log_message("Custom Field already exists for Field Name: ".$customFieldName);
+      }
+    }else{
+      CRM_Core_Error::debug_log_message("Custom Group does not exists for Group Name: ".$customGroupName);
     }
 
     $sendZoomRegistrantsEmailTemplateTitle = CRM_NcnCiviZoom_Constants::SEND_ZOOM_REGISTRANTS_EMAIL_TEMPLATE_TITLE;
@@ -783,23 +806,28 @@ class CRM_NcnCiviZoom_Utils {
 
     $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
     if(!empty($cGId)){
-      $apiParams = array(
-        'sequential' => 1,
-        'custom_group_id' => $cGId,
-        'label' => "Unmatched Zoom Participants",
-        'name' => $cFName,
-        'data_type' => "Memo",
-        'html_type' => "TextArea",
-        'column_name' => 'unmatched_zoom_participants',
-        'is_view' => 1,
-      );
-      try {
-        $apiResult = civicrm_api3('CustomField', 'create', $apiParams);
-      } catch (Exception $e) {
-        CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
-        CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: create');
-        CRM_Core_Error::debug_var('apiParams', $apiParams);
-        CRM_Core_Error::debug_var('Api Error details', $e);
+      $cFId = self::checkIfCFExists($cGName, $cFName);
+      if(empty($cFId)){
+        $apiParams = array(
+          'sequential' => 1,
+          'custom_group_id' => $cGId,
+          'label' => "Unmatched Zoom Participants",
+          'name' => $cFName,
+          'data_type' => "Memo",
+          'html_type' => "TextArea",
+          'column_name' => 'unmatched_zoom_participants',
+          'is_view' => 1,
+        );
+        try {
+          $apiResult = civicrm_api3('CustomField', 'create', $apiParams);
+        } catch (Exception $e) {
+          CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
+          CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: create');
+          CRM_Core_Error::debug_var('apiParams', $apiParams);
+          CRM_Core_Error::debug_var('Api Error details', $e);
+        }
+      }else{
+        CRM_Core_Error::debug_log_message("Custom Field already exists for Field Name: ".$cFName);
       }
     }else{
       CRM_Core_Error::debug_log_message('Error in '.__CLASS__.'::'.__FUNCTION__);
@@ -892,23 +920,28 @@ class CRM_NcnCiviZoom_Utils {
 
     $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
     if(!empty($cGId)){
-      $apiParams = array(
-        'sequential' => 1,
-        'custom_group_id' => $cGId,
-        'label' => "Zoom Join Link",
-        'name' => $cFName,
-        'data_type' => "String",
-        'html_type' => "Text",
-        'column_name' => 'zoom_join_link',
-        'is_view' => 1,
-      );
-      try {
-        $apiResult = civicrm_api3('CustomField', 'create', $apiParams);
-      } catch (Exception $e) {
-        CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
-        CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: create');
-        CRM_Core_Error::debug_var('apiParams', $apiParams);
-        CRM_Core_Error::debug_var('Api Error details', $e);
+      $cFId = self::checkIfCFExists($cGName, $cFName);
+      if(empty($cFId)){
+        $apiParams = array(
+          'sequential' => 1,
+          'custom_group_id' => $cGId,
+          'label' => "Zoom Join Link",
+          'name' => $cFName,
+          'data_type' => "String",
+          'html_type' => "Text",
+          'column_name' => 'zoom_join_link',
+          'is_view' => 1,
+        );
+        try {
+          $apiResult = civicrm_api3('CustomField', 'create', $apiParams);
+        } catch (Exception $e) {
+          CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
+          CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: create');
+          CRM_Core_Error::debug_var('apiParams', $apiParams);
+          CRM_Core_Error::debug_var('Api Error details', $e);
+        }
+      }else{
+        CRM_Core_Error::debug_log_message("Custom Field already exists for Field Name: ".$cFName);
       }
     }else{
       CRM_Core_Error::debug_log_message('Error in '.__CLASS__.'::'.__FUNCTION__);
@@ -918,13 +951,17 @@ class CRM_NcnCiviZoom_Utils {
 
   /*
    * Function to add Zoom participant join link custom field
+   * @return Integer custom Field Id
    */
-  public static function forUpgrade1008(){
+  public static function checkAndCreateZoomPartJoinLinkCF(){
+    $cFId = null;
     $cGName = CRM_NcnCiviZoom_Constants::CG_ZOOM_DATA_SYNC;
     $cFName = CRM_NcnCiviZoom_Constants::CF_ZOOM_PARTICIPANT_JOIN_LINK;
 
     $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
-    if(!empty($cGId)){
+    $cFId = self::checkIfCFExists($cGName ,$cFName);
+
+    if(empty($cFId)){
       $apiParams = array(
         'sequential' => 1,
         'custom_group_id' => $cGId,
@@ -936,17 +973,19 @@ class CRM_NcnCiviZoom_Utils {
         'is_view' => 1,
       );
       try {
-        $apiResult = civicrm_api3('CustomField', 'create', $apiParams);  
+        $apiResult = civicrm_api3('CustomField', 'create', $apiParams);
       } catch (Exception $e) {
         CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
         CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: create');
         CRM_Core_Error::debug_var('apiParams', $apiParams);
         CRM_Core_Error::debug_var('Api Error details', $e);
       }
-    }else{
-      CRM_Core_Error::debug_log_message('Error in '.__CLASS__.'::'.__FUNCTION__);
-      CRM_Core_Error::debug_log_message("Group Id couldn't be found for Group Name: ".$cGName);
+      if(!empty($apiResult['id'])){
+        $cFId = $apiResult['id'];
+      }
     }
+
+    return $cFId;
   }
 
   /*
@@ -989,43 +1028,27 @@ class CRM_NcnCiviZoom_Utils {
       CRM_Core_Error::debug_var('zoom_join_link', $zoom_join_link);
       return FALSE;
     }
-    $cGName = CRM_NcnCiviZoom_Constants::CG_ZOOM_DATA_SYNC;
     $cFName = CRM_NcnCiviZoom_Constants::CF_ZOOM_PARTICIPANT_JOIN_LINK;
 
-    $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
+    $cFId = CRM_NcnCiviZoom_Utils::checkAndCreateZoomPartJoinLinkCF();
 
-    if(!empty($cGId)){
-        $apiParams = array(
-          'sequential' => 1,
-          'custom_group_id' => $cGId,
-          'name' => $cFName,
-        );
+    if(!empty($cFId)){
+      $apiParams = array(
+        'sequential' => 1,
+        'entity_id' => $pId,
+        'custom_'.$cFId => $zoom_join_link,
+      );
       try {
-        $cFDetails = civicrm_api3('CustomField', 'get', $apiParams); 
+        $customValueWritten = civicrm_api3('CustomValue', 'create', $apiParams);
+        return !$customValueWritten['is_error'];
       } catch (Exception $e) {
         CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
-        CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: get');
+        CRM_Core_Error::debug_log_message('Api entity: CustomValue , Api Action: create');
         CRM_Core_Error::debug_var('apiParams', $apiParams);
         CRM_Core_Error::debug_var('Api Error details', $e);
       }
-      if(!empty($cFDetails['id'])){
-        $apiParams = array(
-          'sequential' => 1,
-          'entity_id' => $pId,
-          'custom_'.$cFDetails['id'] => $zoom_join_link,
-        );
-        try {
-          $customValueWritten = civicrm_api3('CustomValue', 'create', $apiParams);
-          return !$customValueWritten['is_error'];
-        } catch (Exception $e) {
-          CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
-          CRM_Core_Error::debug_log_message('Api entity: CustomValue , Api Action: create');
-          CRM_Core_Error::debug_var('apiParams', $apiParams);
-          CRM_Core_Error::debug_var('Api Error details', $e);
-        }
-      }
     }else{
-      CRM_Core_Error::debug_log_message("Group Id couldn't be found for Group Name: ".$cGName);
+      CRM_Core_Error::debug_log_message("Custom Field Zoom Participant Join Link does not exist in ".__CLASS__."::".__FUNCTION__);
     }
 
     return FALSE;
@@ -1336,5 +1359,95 @@ class CRM_NcnCiviZoom_Utils {
     }
 
     return $returnList;
+  }
+
+  /*
+   * Function to create Zoom Data Sync Custom Group
+   * @return Integer custom Group Id
+   */
+  public static function checkAndCreateZoomDataSyncCG(){
+    $cGId = null;
+    // Check and create the custom group if not exists
+    $cGName = CRM_NcnCiviZoom_Constants::CG_ZOOM_DATA_SYNC;
+    $cGId = self::checkIfCGExists($cGName);
+    if(empty($cGId)){
+      $params = array(
+          'title' => "Zoom Data Sync",
+          'extends' => "Participant",
+          'name' => $cGName,
+          'table_name' => "civicrm_value_zoom_data_sync",
+      );
+      try {
+          $cGDetails = civicrm_api3('CustomGroup', 'create', $params);
+      } catch (Exception $e) {
+          CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' Api:CustomGroup Action:create error details', $e);
+          CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' Api:CustomGroup Action:create params', $params);
+      }
+      if(!empty($cGDetails['id'])){
+        $cGId = $cGDetails['id'];
+      }
+    }
+
+    return $cGId;
+  }
+
+  /*
+   * Function to check if a Custom Group exists
+   * @return Integer custom Group Id
+   */
+  public static function checkIfCGExists($name){
+    $cGId = null;
+    if(empty($name)){
+      CRM_Core_Error::debug_log_message('Required Params Missing or not in proper format in  '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('name', $name);
+      return $cGId;
+    }
+    try {
+        $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $name, 'id', 'name');
+    } catch (Exception $e) {
+        CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' error details', $e);
+    }
+
+    return $cGId;
+  }
+
+  /*
+   * Function to check if a Custom Field exists
+   * @return Integer custom Field Id
+   */
+  public static function checkIfCFExists($cGName, $cFName){
+    $cFId = null;
+    if(empty($cGName) || empty($cFName)){
+      CRM_Core_Error::debug_log_message('Required Params Missing or not in proper format in  '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('cGName', $cGName);
+      CRM_Core_Error::debug_var('cFName', $cFName);
+      return $cFId;
+    }
+
+    $cGId = self::checkIfCGExists($cGName);
+
+    if(!empty($cGId)){
+      $apiParams = array(
+        'sequential' => 1,
+        'custom_group_id' => $cGId,
+        'name' => $cFName,
+      );
+      try {
+        $cFDetails = civicrm_api3('CustomField', 'get', $apiParams);
+      } catch (Exception $e) {
+        CRM_Core_Error::debug_log_message('Error while calling an api in '.__CLASS__.'::'.__FUNCTION__);
+        CRM_Core_Error::debug_log_message('Api entity: CustomField , Api Action: get');
+        CRM_Core_Error::debug_var('apiParams', $apiParams);
+        CRM_Core_Error::debug_var('Api Error details', $e);
+      }
+      if(!empty($cFDetails['id'])){
+        $cFId = $cFDetails['id'];
+      }
+    }else{
+      CRM_Core_Error::debug_log_message('Error in '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_log_message("Group Id couldn't be found for Group Name: ".$cGName);
+    }
+
+    return $cFId;
   }
 }
