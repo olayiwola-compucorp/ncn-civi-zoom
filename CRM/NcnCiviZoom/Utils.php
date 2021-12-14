@@ -1369,11 +1369,7 @@ class CRM_NcnCiviZoom_Utils {
     $cGId = null;
     // Check and create the custom group if not exists
     $cGName = CRM_NcnCiviZoom_Constants::CG_ZOOM_DATA_SYNC;
-    try {
-        $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
-    } catch (Exception $e) {
-        CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' error details', $e);
-    }
+    $cGId = self::checkIfCGExists($cGName);
     if(empty($cGId)){
       $params = array(
           'title' => "Zoom Data Sync",
