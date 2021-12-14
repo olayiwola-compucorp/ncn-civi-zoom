@@ -58,6 +58,8 @@ function ncn_civi_zoom_civicrm_postInstall() {
   CRM_NcnCiviZoom_Utils::forUpgrade1004();
   CRM_NcnCiviZoom_Utils::forUpgrade1006();
   CRM_NcnCiviZoom_Utils::forUpgrade1007();
+  CRM_NcnCiviZoom_Utils::checkAndCreateZoomDataSyncCG();
+  CRM_NcnCiviZoom_Utils::checkAndCreateZoomPartJoinLinkCF();
   _ncn_civi_zoom_civix_civicrm_postInstall();
 }
 

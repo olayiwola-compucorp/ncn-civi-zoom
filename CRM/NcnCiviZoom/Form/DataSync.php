@@ -81,27 +81,7 @@ class CRM_NcnCiviZoom_Form_DataSync extends CRM_Core_Form {
     }
 
     // Check and create the custom group if not exists
-    $cGName = CRM_NcnCiviZoom_Constants::CG_ZOOM_DATA_SYNC;
-    try {
-        $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
-    } catch (Exception $e) {
-        CRM_Core_Error::debug_var('CRM_NcnCiviZoom_Form_DataSync::postProcess error details', $e);
-    }
-    if(empty($cGId)){
-        $params = array(
-            'title' => "Zoom Data Sync",
-            'extends' => "Participant",
-            'name' => $cGName,
-            'table_name' => "civicrm_value_zoom_data_sync",
-        );
-        try {
-            $cGDetails = civicrm_api3('CustomGroup', 'create', $params);
-        } catch (Exception $e) {
-            CRM_Core_Error::debug_var('CRM_NcnCiviZoom_Form_DataSync::postProcess Api:CustomGroup Action:create error details', $e);
-            CRM_Core_Error::debug_var('CRM_NcnCiviZoom_Form_DataSync::postProcess Api:CustomGroup Action:create params', $params);
-        }
-        $cGId = $cGDetails['id'];
-    }
+    $cGId = CRM_NcnCiviZoom_Utils::checkAndCreateZoomDataSyncCG();
 
     // Check and create the custom fields if not exists
     foreach ($allSelectedFields as $key => $selectedField) {
