@@ -523,7 +523,6 @@ class CRM_NcnCiviZoom_Utils {
     $customFieldName = CRM_NcnCiviZoom_Constants::CF_Event_Zoom_Notes;
     $cGId = self::checkIfCGExists($customGroupName);
     if(empty($cGId)){
-      CRM_Core_Error::debug_log_message('forUpgrade1003 G Id exists');
       $apiParams = array(
         'sequential' => 1,
         'title' => "Event Zoom Notes",
@@ -547,7 +546,6 @@ class CRM_NcnCiviZoom_Utils {
     if(!empty($cGId)){
       $cFId = self::checkIfCFExists($customGroupName ,$customFieldName);
       if(empty($cFId)){
-        CRM_Core_Error::debug_log_message('forUpgrade1003 F Id exists');
         $apiParams = array(
           'sequential' => 1,
           'custom_group_id' => $cGId,
@@ -810,7 +808,6 @@ class CRM_NcnCiviZoom_Utils {
     if(!empty($cGId)){
       $cFId = self::checkIfCFExists($cGName, $cFName);
       if(empty($cFId)){
-        CRM_Core_Error::debug_log_message('forUpgrade1006 F Id exists');
         $apiParams = array(
           'sequential' => 1,
           'custom_group_id' => $cGId,
@@ -986,9 +983,8 @@ class CRM_NcnCiviZoom_Utils {
       if(!empty($apiResult['id'])){
         $cFId = $apiResult['id'];
       }
-    }else{
-      CRM_Core_Error::debug_log_message("Custom Field already exists for Field Name: ".$cFName);
     }
+
     return $cFId;
   }
 
@@ -1394,8 +1390,6 @@ class CRM_NcnCiviZoom_Utils {
       if(!empty($cGDetails['id'])){
         $cGId = $cGDetails['id'];
       }
-    }else{
-      CRM_Core_Error::debug_log_message("Custom Group already exists for Group Name: ".$cGName);
     }
 
     return $cGId;
