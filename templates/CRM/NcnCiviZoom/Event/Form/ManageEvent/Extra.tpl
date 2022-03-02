@@ -43,7 +43,8 @@ CRM.$(function($) {
 					$("#zoom_registrants_link").hide();
 				}
 
-				// Move zoom account list drop down before webinar field.
+				// Move zoom account list drop down before webinar Id and meeting Id fields.
+				$($("input[name^='{/literal}{$customIdWebinar}{literal}']").parent().parent()).insertBefore($("input[name^='{/literal}{$customIdMeeting}{literal}']").parent().parent());
 				$("#zoom_account_list_full").insertBefore($("input[name^='{/literal}{$customIdWebinar}{literal}']").parent().parent());
 
 				//Hiding the Account Id field

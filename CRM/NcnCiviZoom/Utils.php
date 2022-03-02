@@ -958,6 +958,7 @@ class CRM_NcnCiviZoom_Utils {
     $cGName = CRM_NcnCiviZoom_Constants::CG_ZOOM_DATA_SYNC;
     $cFName = CRM_NcnCiviZoom_Constants::CF_ZOOM_PARTICIPANT_JOIN_LINK;
 
+    self::checkAndCreateZoomDataSyncCG();
     $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
     $cFId = self::checkIfCFExists($cGName ,$cFName);
 
@@ -1277,8 +1278,10 @@ class CRM_NcnCiviZoom_Utils {
    */
   public static function forUpgrade1010(){
     $tableName = CRM_NcnCiviZoom_Constants::ZOOM_REGISTRANTS_TABLE_NAME;
-    $alterTableQuery = "ALTER TABLE civicrm_zoom_registrants ADD `emailed` int NOT NULL  DEFAULT 0";
-    CRM_Core_DAO::executeQuery($alterTableQuery);
+    if(!CRM_Core_DAO::checkFieldExists($tableName, 'emailed')){
+      $alterTableQuery = "ALTER TABLE civicrm_zoom_registrants ADD `emailed` int NOT NULL  DEFAULT 0";
+      CRM_Core_DAO::executeQuery($alterTableQuery);
+    }
   }
 
   /*
