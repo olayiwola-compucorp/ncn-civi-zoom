@@ -201,7 +201,9 @@ class CRM_NcnCiviZoom_Upgrader extends CRM_NcnCiviZoom_Upgrader_Base {
 
   //Upgrade function to add create the zoom registrants table
   public function upgrade_1009(){
-    CRM_NcnCiviZoom_Utils::forUpgrade1009();
+    $this->ctx->log->info('Applying update 1009');
+    // Create database schema.
+    $this->executeSqlFile('sql/upgrade_1009.sql');
     return TRUE;
   }
 

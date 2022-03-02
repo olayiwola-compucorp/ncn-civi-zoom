@@ -111,7 +111,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
             $iso_result = civicrm_api3('Country', 'get', [
                 'sequential' => 1,
                 'return' => ["iso_code"],
-                'id' => $participant_result[country_id],
+                'id' => $participant_result['country_id'],
             ])['values'][0];
 
         }  catch (Exception $e) {
