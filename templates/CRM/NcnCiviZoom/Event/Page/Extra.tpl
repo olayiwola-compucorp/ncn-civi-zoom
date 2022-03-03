@@ -2,8 +2,8 @@
 {literal}
 <script>
 CRM.$(function($){
-	//tpl file to hide the custom fields
-	$("table").hide();
+	//tpl file to remove the custom fields
+	$("table").remove();
 });
 </script>
 {/literal}
