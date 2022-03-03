@@ -528,6 +528,7 @@ class CRM_NcnCiviZoom_Utils {
         'title' => "Event Zoom Notes",
         'extends' => "Event",
         'name' => $customGroupName,
+        'is_public' => 0,
       );
 
       try {
@@ -958,8 +959,7 @@ class CRM_NcnCiviZoom_Utils {
     $cGName = CRM_NcnCiviZoom_Constants::CG_ZOOM_DATA_SYNC;
     $cFName = CRM_NcnCiviZoom_Constants::CF_ZOOM_PARTICIPANT_JOIN_LINK;
 
-    self::checkAndCreateZoomDataSyncCG();
-    $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
+    $cGId = self::checkAndCreateZoomDataSyncCG();
     $cFId = self::checkIfCFExists($cGName ,$cFName);
 
     if(empty($cFId)){
@@ -1379,6 +1379,7 @@ class CRM_NcnCiviZoom_Utils {
           'extends' => "Participant",
           'name' => $cGName,
           'table_name' => "civicrm_value_zoom_data_sync",
+          'is_public' => 0,
       );
       try {
           $cGDetails = civicrm_api3('CustomGroup', 'create', $params);
@@ -1452,5 +1453,26 @@ class CRM_NcnCiviZoom_Utils {
     }
 
     return $cFId;
+  }
+
+  /*
+   * Function to make the zoom based Custom Groups to be private
+   */
+  public static function forUpgrade1011(){
+    $customGroupNames = [];
+    $customGroupNames[] = CRM_NcnCiviZoom_Constants::CG_Event_Zoom_Notes;
+    $customGroupNames[] = CRM_NcnCiviZoom_Constants::CG_ZOOM_DATA_SYNC;
+    foreach ($customGroupNames as $customGroupName) {
+      $cGId = self::checkIfCGExists($customGroupName);
+      if($cGId){
+        $params = array('id' => $cGId, 'is_public' => 0);
+        try {
+          $cGDetails = civicrm_api3('CustomGroup', 'create', $params);
+        } catch (Exception $e) {
+          CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' Api:CustomGroup Action:create error details', $e);
+          CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' Api:CustomGroup Action:create params', $params);
+        }
+      }
+    }
   }
 }

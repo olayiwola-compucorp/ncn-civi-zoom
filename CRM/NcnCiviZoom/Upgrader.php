@@ -212,4 +212,10 @@ class CRM_NcnCiviZoom_Upgrader extends CRM_NcnCiviZoom_Upgrader_Base {
     CRM_NcnCiviZoom_Utils::forUpgrade1010();
     return TRUE;
   }
+
+  //Upgrade function to make the zoom based Custom Groups to be private
+  public function upgrade_1011(){
+    CRM_NcnCiviZoom_Utils::forUpgrade1011();
+    return TRUE;
+  }
 }
