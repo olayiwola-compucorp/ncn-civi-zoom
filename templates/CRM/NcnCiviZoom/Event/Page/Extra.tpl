@@ -3,7 +3,7 @@
 <script>
 CRM.$(function($){
 	//tpl file to remove the custom fields
-	$("table").remove();
+	$("[id^='Event_Zoom_Notes']").parents('table').remove();
 });
 </script>
 {/literal}
