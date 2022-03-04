@@ -29,6 +29,7 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
 			FROM civicrm_contact c
 			LEFT JOIN civicrm_email e ON e.contact_id = c.id
 			WHERE
+        c.is_deleted = 0 and
 				e.email = %1";
 		$qParams = array(
 			1 => array($zoomRegistrant['email'], 'String'),

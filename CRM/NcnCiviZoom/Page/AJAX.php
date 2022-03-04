@@ -102,26 +102,41 @@ class CRM_NcnCiviZoom_Page_AJAX {
   public static function getContactDetails(){
   	$cId = CRM_Utils_Request::retrieve('id', 'Int', CRM_Core_DAO::$_nullObject);
   	$returnData = array();
-		$contactDetails = civicrm_api3('Contact', 'get', array(
-		  'sequential' => 1,
-		  'id' => $cId,
-		));
+  	try {
+  		$contactDetails = civicrm_api3('Contact', 'get', array(
+  		  'sequential' => 1,
+  		  'id' => $cId,
+  		));
+  	} catch (Exception $e) {
+  		CRM_Core_Error::debug_var('Contact-get Error', $e);
+  	}
 		$returnData['email'] = $contactDetails['values'][0]['email'];
 		$returnData['display_name'] = $contactDetails['values'][0]['display_name'];
-		$memDetails = civicrm_api3('Membership', 'get', array(
+
+		$apiParams = array(
 		  'sequential' => 1,
 		  'contact_id' => $cId,
-		));
+		);
+  	try {
+  		$memDetails = civicrm_api3('Membership', 'get', $apiParams);
+  	} catch (Exception $e) {
+  		CRM_Core_Error::debug_var('Membership-get Error', $e);
+  	}
 		$returnData['memerbships'] = $memDetails['count'];
-		$contribDetails = civicrm_api3('Contribution', 'get', array(
-		  'sequential' => 1,
-		  'contact_id' => $cId,
-		));
+
+  	try {
+  		$contribDetails = civicrm_api3('Contribution', 'get', $apiParams);
+  	} catch (Exception $e) {
+  		CRM_Core_Error::debug_var('Contribution-get Error', $e);
+  	}
 		$returnData['contributions'] = $contribDetails['count'];
-		$participantDetails = civicrm_api3('Participant', 'get', array(
-		  'sequential' => 1,
-		  'contact_id' => $cId,
-		));
+
+  	try {
+  		$participantDetails = civicrm_api3('Participant', 'get', $apiParams);
+  	} catch (Exception $e) {
+  		CRM_Core_Error::debug_var('Participant-get Error', $e);
+  	}
+
 		$returnData['event_registrations'] = $participantDetails['count'];
 		$returnData['contactUrl'] = CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid='.$cId);
 
