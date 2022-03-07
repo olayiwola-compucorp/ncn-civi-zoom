@@ -118,26 +118,26 @@ class CRM_NcnCiviZoom_Page_AJAX {
 		  'contact_id' => $cId,
 		);
   	try {
-  		$memDetails = civicrm_api3('Membership', 'get', $apiParams);
+  		$memDetails = civicrm_api3('Membership', 'getcount', $apiParams);
   	} catch (Exception $e) {
-  		CRM_Core_Error::debug_var('Membership-get Error', $e);
+  		CRM_Core_Error::debug_var('Membership-getcount Error', $e);
   	}
-		$returnData['memerbships'] = $memDetails['count'];
+		$returnData['memerbships'] = $memDetails;
 
   	try {
-  		$contribDetails = civicrm_api3('Contribution', 'get', $apiParams);
+  		$contribDetails = civicrm_api3('Contribution', 'getcount', $apiParams);
   	} catch (Exception $e) {
-  		CRM_Core_Error::debug_var('Contribution-get Error', $e);
+  		CRM_Core_Error::debug_var('Contribution-getcount Error', $e);
   	}
-		$returnData['contributions'] = $contribDetails['count'];
+		$returnData['contributions'] = $contribDetails;
 
   	try {
-  		$participantDetails = civicrm_api3('Participant', 'get', $apiParams);
+  		$participantDetails = civicrm_api3('Participant', 'getcount', $apiParams);
   	} catch (Exception $e) {
-  		CRM_Core_Error::debug_var('Participant-get Error', $e);
+  		CRM_Core_Error::debug_var('Participant-getcount Error', $e);
   	}
 
-		$returnData['event_registrations'] = $participantDetails['count'];
+		$returnData['event_registrations'] = $participantDetails;
 		$returnData['contactUrl'] = CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid='.$cId);
 
 		CRM_Utils_JSON::output(array('data' => $returnData));
