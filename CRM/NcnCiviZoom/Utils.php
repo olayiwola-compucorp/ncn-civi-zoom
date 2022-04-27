@@ -1475,4 +1475,29 @@ class CRM_NcnCiviZoom_Utils {
       }
     }
   }
+
+  /*
+   * Function to check if a participant record is imported from zoom
+   */
+  public static function isImportedFromZoom($participant, $eventId) {
+    $importedFromZoom = FALSE;
+    if(empty($participant['email']) || !isset($eventId) ){
+      CRM_Core_Error::debug_log_message('Required Params Missing or not in proper format in  '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('participant', $participant);
+      CRM_Core_Error::debug_var('eventId', $eventId);
+      return $importedFromZoom;
+    }
+
+    $tableName = CRM_NcnCiviZoom_Constants::ZOOM_REGISTRANTS_TABLE_NAME;
+    $getZoomRegistrantQuery = "SELECT * FROM ".$tableName." WHERE event_id = %1 AND email = %2";
+    $qParams = array(
+      1 => array($eventId, 'Integer'),
+      2 => array($participant['email'], 'String'),
+    );
+    $dao = CRM_Core_DAO::executeQuery($getZoomRegistrantQuery, $qParams);
+    while ($dao->fetch()) {
+      $importedFromZoom = TRUE;
+    }
+    return $importedFromZoom;
+  }
 }

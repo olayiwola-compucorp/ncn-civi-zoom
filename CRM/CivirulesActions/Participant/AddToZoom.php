@@ -147,6 +147,13 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	 */
 	private function addParticipant($participant, $entityID, $triggerData, $entity) {
 		$event = $triggerData->getEntityData('Event');
+
+		// GK Veda#20138 : Check if participant record was imported from zoom and avoid pushing it back to zoom again
+		$importedFromZoom = CRM_NcnCiviZoom_Utils::isImportedFromZoom($participant, $event['id']);
+		if ($importedFromZoom) {
+			return;
+		}
+
 		$accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($event['id']);
 		$settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
 		if($entity == 'Webinar'){
