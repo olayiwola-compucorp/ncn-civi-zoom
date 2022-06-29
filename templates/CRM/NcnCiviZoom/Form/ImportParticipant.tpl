@@ -37,7 +37,7 @@
       </tbody>
     </table>
   </div>
-
+  <div id="already_registered_msg_ctr" class="messages status"><span class="warning">This contact has been already registered for this event.</span></div>
 <div>
   <div class="crm-submit-buttons">
     {include file="CRM/common/formButtons.tpl" location="bottom"}
@@ -53,21 +53,9 @@ CRM.$(function($) {
     e.preventDefault();
   });
 
-
-  var selectedCid = $("#change_contact_id").val();
-  if(selectedCid && selectedCid != ''){
-      showContactDetails(selectedCid);
-  }else{
-    $("#show_contact_details").hide();
-  }
+  showContactDetails();
   $("#change_contact_id").on("change", function(){
-    var selectedCid = $("#change_contact_id").val();
-    if(selectedCid && selectedCid != ''){
-        showContactDetails(selectedCid);
-    }else{
-      $("#show_contact_details").hide();
-    }
-
+    showContactDetails();
   });
 
   function emptyContactDetailsTable(){
@@ -78,30 +66,43 @@ CRM.$(function($) {
     $("#no_of_contributions").text("");
     $("#no_of_event_registrations").text("");
     $("#view_contact").removeAttr('href');
+    $("#show_contact_details").hide();
+    $("#already_registered_msg_ctr").hide();
+    $('button[data-identifier="_qf_ImportParticipant_submit"]').show();
   }
 
-  function showContactDetails(cId){
-    emptyContactDetailsTable();
+  async function showContactDetails(){
+    await emptyContactDetailsTable();
+    var eId = '{/literal}{$event_id}{literal}';
+    var cId = $("#change_contact_id").val();
+
     $("#selected_contact_id").text(cId);
-    var contactUrl = CRM.url('civicrm/contact/view', {reset: 1, cid: cId});
-    var dataUrl = {/literal}"{crmURL p='civicrm/ajax/rest' h=0 q='className=CRM_NcnCiviZoom_Page_AJAX&fnName=getContactDetails'}"{literal}
-    dataUrl += '&id='+cId;
-    $.ajax({
-      url: dataUrl,
-      async: false,
-      success: function(data) {
-        $("#view_contact").attr("href", data.data.contactUrl);
-        $("#view_contact").attr("target", "_blank");
-        $("#display_name_full").text(data.data.display_name);
-        $("#email_id").text(data.data.email);
-        $("#no_of_memberhips").text(data.data.memerbships);
-        $("#no_of_contributions").text(data.data.contributions);
-        $("#no_of_event_registrations").text(data.data.event_registrations);
-      }
-    });
-    $('#show_contact_details').find('td').css('text-align', 'center');
-    $('#show_contact_details').find('th').css('text-align', 'center');
-    $("#show_contact_details").show();
+    if(cId && cId != ''){
+      var contactUrl = CRM.url('civicrm/contact/view', {reset: 1, cid: cId});
+      var dataUrl = {/literal}"{crmURL p='civicrm/ajax/rest' h=0 q='className=CRM_NcnCiviZoom_Page_AJAX&fnName=getContactDetails'}"{literal}
+      dataUrl += '&id='+cId + '&event_id='+eId;
+      $.ajax({
+        url: dataUrl,
+        async: false,
+        success: function(data) {
+          $("#view_contact").attr("href", data.data.contactUrl);
+          $("#view_contact").attr("target", "_blank");
+          $("#display_name_full").text(data.data.display_name);
+          $("#email_id").text(data.data.email);
+          $("#no_of_memberhips").text(data.data.memerbships);
+          $("#no_of_contributions").text(data.data.contributions);
+          $("#no_of_event_registrations").text(data.data.event_registrations);
+          if(data.data.already_registered){
+            $("#already_registered_msg_ctr").show();
+            $('button[data-identifier="_qf_ImportParticipant_submit"]').hide();
+          }
+
+        }
+      });
+      $('#show_contact_details').find('td').css('text-align', 'center');
+      $('#show_contact_details').find('th').css('text-align', 'center');
+      $("#show_contact_details").show();
+    }
   }
 
 });

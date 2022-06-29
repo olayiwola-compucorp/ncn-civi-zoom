@@ -58,6 +58,7 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
     $event_title = CRM_Core_DAO::singleValueQuery('SELECT title FROM civicrm_event WHERE id = '.$zoomRegistrant['event_id']);
     $this->assign('current_event', $event_title);
     $this->assign('id', $this->_id);
+    $this->assign('event_id', $zoomRegistrant['event_id']);
 
     // export form elements
     $this->assign('elementNames', $this->getRenderableElementNames());
@@ -117,6 +118,7 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
 			CRM_Core_Error::debug_log_message('Error while calling api in '.__CLASS__.'::'.__FUNCTION__);
 			CRM_Core_Error::debug_log_message('Api Entity: Participant , Action: create');
 			CRM_Core_Error::debug_var('Api Params', $createParticipantApiParams);
+      CRM_Core_Error::debug_var('Api Error details', $e);
     }
 
     if (!$result['is_error']) {
