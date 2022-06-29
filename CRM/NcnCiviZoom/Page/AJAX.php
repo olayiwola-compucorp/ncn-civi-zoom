@@ -101,6 +101,8 @@ class CRM_NcnCiviZoom_Page_AJAX {
   */
   public static function getContactDetails(){
   	$cId = CRM_Utils_Request::retrieve('id', 'Int', CRM_Core_DAO::$_nullObject);
+  	$eventId = CRM_Utils_Request::retrieve('event_id', 'Int', CRM_Core_DAO::$_nullObject);
+
   	$returnData = array();
   	try {
   		$contactDetails = civicrm_api3('Contact', 'get', array(
@@ -132,12 +134,25 @@ class CRM_NcnCiviZoom_Page_AJAX {
 		$returnData['contributions'] = $contribDetails;
 
   	try {
-  		$participantDetails = civicrm_api3('Participant', 'getcount', $apiParams);
+  		$eventRegistrations = civicrm_api3('Participant', 'getcount', $apiParams);
   	} catch (Exception $e) {
   		CRM_Core_Error::debug_var('Participant-getcount Error', $e);
   	}
 
-		$returnData['event_registrations'] = $participantDetails;
+		$returnData['event_registrations'] = $eventRegistrations;
+
+		$apiParams['event_id'] = $eventId;
+  	try {
+  		$participantDetails = civicrm_api3('Participant', 'getcount', $apiParams);
+  	} catch (Exception $e) {
+  		CRM_Core_Error::debug_var('Participant-get Error', $e);
+  	}
+
+  	$returnData['already_registered'] = FALSE;
+  	if(!empty($participantDetails)){
+  		$returnData['already_registered'] = TRUE;
+  	}
+
 		$returnData['contactUrl'] = CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid='.$cId);
 
 		CRM_Utils_JSON::output(array('data' => $returnData));
