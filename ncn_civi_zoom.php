@@ -586,3 +586,13 @@ function ncn_civi_zoom_civicrm_check(&$messages, $statusNames = [], $includeDisa
     }
   }
 }
+
+function ncn_civi_zoom_civicrm_searchTasks(string $objectType, array &$tasks){
+  if($objectType == 'event'){
+    $tasks[] = array(
+      'title' => ts('Add Participant to Zoom'),
+      'class' => 'CRM_NcnCiviZoom_Form_Task_AddToZoom',
+      'result' => null,
+    );
+  }
+}
