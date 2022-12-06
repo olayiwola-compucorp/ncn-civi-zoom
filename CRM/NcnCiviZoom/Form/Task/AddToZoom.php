@@ -51,7 +51,7 @@ class CRM_NcnCiviZoom_Form_Task_AddToZoom extends CRM_Event_Form_Task {
     CRM_Utils_System::setTitle(ts('Add Participant to Zoom'));
     $session = CRM_Core_Session::singleton();
     $this->addDefaultButtons(ts('Add to Zoom'), 'done');
-    CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' this->_participantIds', $this->_participantIds);
+    // CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' this->_participantIds', $this->_participantIds);
   }
 
   /**
@@ -64,10 +64,10 @@ class CRM_NcnCiviZoom_Form_Task_AddToZoom extends CRM_Event_Form_Task {
     $params = $this->exportValues();
     $value = [];
 
-    CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' this->_participantIds', $this->_participantIds);
+    // CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' this->_participantIds', $this->_participantIds);
     foreach ($this->_participantIds as $participantId) {
       $status = CRM_NcnCiviZoom_Utils::pushToZoom($participantId);
-    	CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' status', $status);
+    	// CRM_Core_Error::debug_var(__CLASS__.'::'.__FUNCTION__.' status', $status);
     	if($status){
     		$alertType = 'success';
     		$message = 'Participant Added to Zoom.';
