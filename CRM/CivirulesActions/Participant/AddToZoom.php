@@ -162,15 +162,17 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 			$url = $settings['base_url'] . "/meetings/$entityID/registrants";
 		}
 		$token = $this->createJWTToken($accountId);
+		$participantId = $triggerData->getEntityData('Participant')['participant_id'];
+		$contactId = $triggerData->getEntityData('Participant')['contact_id'];
+		// Create Activity while pushing the participant to zoom
+		$activityCreateResult = CRM_NcnCiviZoom_Utils::createPushToZoomActivity($participantId, $contactId);
 		$response = Zttp::withHeaders([
 			'Content-Type' => 'application/json;charset=UTF-8',
 			'Authorization' => "Bearer $token"
 		])->post($url, $participant);
 		$result = $response->json();
 
-		CRM_Core_Error::debug_var('Zoom addParticipant result', $result);
 		if(!empty($result['join_url'])){
-			$participantId = $triggerData->getEntityData('Participant')['participant_id'];
 			CRM_NcnCiviZoom_Utils::updateZoomParticipantJoinLink($participantId, $result['join_url']);
 		}
 
@@ -181,6 +183,10 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 		}
 		// Alert to user on success.
 		if ($response->isOk()) {
+			// Update that Activity after pushing the participant to zoom
+			if(!empty($activityCreateResult['id'])){
+				$activityUpdateResult = CRM_NcnCiviZoom_Utils::completePushToZoomActivity($activityCreateResult['id']);
+			}
 			$firstName = $participant['first_name'];
 			$lastName = $participant['last_name'];
 			$msg .= 'Participant Added to Zoom. $entity ID: '.$entityID;
@@ -516,17 +522,27 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	}
 
   // MV: Add Zttp call function
-  public function requestZttpWithHeader($accountId, $url) {
+  public function requestZttpWithHeader($accountId, $url, $data = []) {
 
     $object = new CRM_CivirulesActions_Participant_AddToZoom;
     $token  = $object->createJWTToken($accountId);
-    $request = Zttp::withHeaders([
-      'Content-Type' => 'application/json;charset=UTF-8',
-      'Authorization' => "Bearer $token"
-    ])->get($url);
+    if(!empty($data) && is_array($data)){
+    	$response = Zttp::withHeaders([
+    		'Content-Type' => 'application/json;charset=UTF-8',
+    		'Authorization' => "Bearer $token"
+    	])->post($url, $data);
 
-    $isRequestOK = $request->isOk();
-    $result = $request->json();
+    	$isRequestOK = $response->isOk();
+    	$result = $response->json();
+    }else{
+    	$request = Zttp::withHeaders([
+    	  'Content-Type' => 'application/json;charset=UTF-8',
+    	  'Authorization' => "Bearer $token"
+    	])->get($url);
+
+    	$isRequestOK = $request->isOk();
+    	$result = $request->json();
+    }
 
     return [$isRequestOK, $result];
   }

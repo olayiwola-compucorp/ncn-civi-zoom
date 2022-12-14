@@ -1500,4 +1500,203 @@ class CRM_NcnCiviZoom_Utils {
     }
     return $importedFromZoom;
   }
+
+  public static function pushToZoom($participantId){
+    CRM_Core_Error::debug_var('participantId ', $participantId);
+    $status = FALSE;
+    if(empty($participantId)){
+      CRM_Core_Error::debug_log_message('Required Params Missing or not in proper format in  '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('participantId', $participantId);
+      return $status;
+    }
+
+    $apiParams = array(
+      'sequential' => 1,
+      'id' => $participantId,
+    );
+
+    try {
+      $participantDetails = civicrm_api3('Participant', 'get', $apiParams);
+    } catch (Exception $e) {
+      CRM_Core_Error::debug_log_message('Error while calling api in '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('Error while calling api Participant-get apiParams', $apiParams);
+      CRM_Core_Error::debug_var('Error message ', $e->getMessage());
+    }
+
+    if(!empty($participantDetails['values'][0])){
+      $participant = $participantDetails['values'][0];
+      $eventId = $participant['event_id'];
+      $contactId = $participant['contact_id'];
+      if(!empty($eventId) && !empty($contactId)){
+        $contact = self::getContactDetails($contactId);
+        $settings = self::getZoomSettingsByEventId($eventId);
+        $apiParams = array(
+          'sequential' => 1,
+          'id' => $contactId,
+        );
+        $entityDetails = self::getEntityData($eventId);
+        if($entityDetails['entity'] == 'Webinar'){
+          $url = $settings['base_url'] . "/webinars/".$entityDetails['entity_id']."/registrants";
+        } elseif($entityDetails['entity'] == 'Meeting'){
+          $url = $settings['base_url'] . "/meetings/".$entityDetails['entity_id']."/registrants";
+        }
+        if(!empty($contact) && !empty($settings['id']) && !empty($url)){
+          $activityCreateResult = CRM_NcnCiviZoom_Utils::createPushToZoomActivity($participantId, $contactId);
+          list($status, $zoomResult) = CRM_CivirulesActions_Participant_AddToZoom::requestZttpWithHeader($settings['id'], $url, $contact);
+          if($status && !empty($zoomResult['join_url'])){
+            if(!empty($activityCreateResult['id'])){
+              $activityUpdateResult = CRM_NcnCiviZoom_Utils::completePushToZoomActivity($activityCreateResult['id']);
+            }
+            CRM_NcnCiviZoom_Utils::updateZoomParticipantJoinLink($participantId, $zoomResult['join_url']);
+          }
+        }
+      }
+    }
+
+    return $status;
+  }
+
+  public static function getContactDetails($contactId){
+    $contact = array();
+    if(empty($contactId)){
+      CRM_Core_Error::debug_log_message('Required Params Missing or not in proper format in  '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('contactId', $contactId);
+      return $contact;
+    }
+    try {
+      $contactDetails = civicrm_api3('Contact', 'get', [
+        'sequential' => 1,
+        'id' => $contactId,
+        'return' => ["email", "first_name", "last_name", "street_address", "city", "state_province_name", "country", "postal_code"],
+      ]);
+    } catch (Exception $e) {
+      CRM_Core_Error::debug_log_message('Error while calling api in '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('Error while calling api Contact-get apiParams', $apiParams);
+      CRM_Core_Error::debug_var('Error message ', $e->getMessage());
+    }
+    if(!empty($contactDetails['values'][0])){
+      $contact = $contactDetails['values'][0];
+    }
+
+    return $contact;
+  }
+
+  public static function getEntityData($eventId){
+    $entityDetails = array();
+    if(empty($eventId)){
+      CRM_Core_Error::debug_log_message('Required Params Missing or not in proper format in  '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('eventId', $eventId);
+      return $entityDetails;
+    }
+    try {
+      $eventDetails = civicrm_api3('Event', 'get', [
+        'sequential' => 1,
+        'id' => $eventId,
+      ]);
+    } catch (Exception $e) {
+      CRM_Core_Error::debug_log_message('Error while calling api in '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('Error while calling api Contact-get apiParams', $apiParams);
+      CRM_Core_Error::debug_var('Error message ', $e->getMessage());
+    }
+    if(!empty($eventDetails['values'][0])){
+      $event = $eventDetails['values'][0];
+      $webinarIdCFId = self::getWebinarCustomField();
+      $meetingIdCFId = self::getMeetingCustomField();
+      if(!empty($event[$webinarIdCFId])){
+        $entityDetails['entity'] = 'Webinar';
+        $entityDetails['entity_id'] = $event[$webinarIdCFId];
+      }elseif(!empty($event[$meetingIdCFId])){
+        $entityDetails['entity'] = 'Meeting';
+        $entityDetails['entity_id'] = $event[$meetingIdCFId];
+      }
+    }
+
+    return $entityDetails;
+  }
+
+  public static function createPushToZoomActivityType(){
+    if(empty(self::getPushToZoomActivityTypeId())){
+      $activityTypeGroupId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_OptionGroup', 'activity_type', 'id', 'name');
+      $typeName = CRM_NcnCiviZoom_Constants::PUSH_TO_ZOOM_ACTIVITY_TYPE_NAME;
+      $createApiParams = array(
+        'sequential' => 1,
+        'option_group_id' => $activityTypeGroupId,
+        'name' => $typeName,
+        'label' => str_replace('_', ' ', $typeName),
+        'is_active' => 1,
+      );
+      self::CiviCRMAPIWrapper('OptionValue', 'create', $createApiParams);
+    }
+  }
+
+  public static function getPushToZoomActivityTypeId() {
+    $typeName = CRM_NcnCiviZoom_Constants::PUSH_TO_ZOOM_ACTIVITY_TYPE_NAME;
+    return CRM_Core_PseudoConstant::getKey('CRM_Activity_BAO_Activity', 'activity_type_id', $typeName);
+  }
+
+  public static function createPushToZoomActivity($participantId, $contactId){
+    $actTypeId = self::getPushToZoomActivityTypeId();
+    $apiParams = array(
+      'sequential' => 1,
+      'activity_type_id' => $actTypeId,
+      'source_record_id' => $participantId,
+      'status_id' => 'Scheduled',
+      'source_contact_id' => $contactId,
+    );
+    try {
+      $actResult = civicrm_api3('Activity', 'create', $apiParams);
+    } catch (Exception $e) {
+      CRM_Core_Error::debug_log_message('Error while calling api in '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('Error while calling api Activity-create apiParams', $apiParams);
+      CRM_Core_Error::debug_var('Error message ', $e->getMessage());
+    }
+
+    return $actResult;
+  }
+
+  public static function completePushToZoomActivity($activityId){
+    $apiParams = array(
+      'sequential' => 1,
+      'id' => $activityId,
+      'status_id' => 'Completed',
+    );
+    try {
+      $actResult = civicrm_api3('Activity', 'create', $apiParams);
+    } catch (Exception $e) {
+      CRM_Core_Error::debug_log_message('Error while calling api in '.__CLASS__.'::'.__FUNCTION__);
+      CRM_Core_Error::debug_var('Error while calling api Activity-create apiParams', $apiParams);
+      CRM_Core_Error::debug_var('Error message ', $e->getMessage());
+    }
+
+    return $actResult;
+  }
+
+  /**
+   * CiviCRM API wrapper
+   *
+   * @param string $entity
+   * @param string $action
+   * @param array $params
+   *
+   * @return array of API results
+   */
+  public static function CiviCRMAPIWrapper($entity, $action, $params = []) {
+
+    if (empty($entity) || empty($action)) {
+      return;
+    }
+
+    try {
+      $result = civicrm_api3($entity, $action, $params);
+    }
+    catch (Exception $e) {
+      CRM_Core_Error::backtrace('Backtrace in '.__CLASS__.'::'.__FUNCTION__, TRUE);
+      CRM_Core_Error::debug_log_message('CiviCRM API Call Failed');
+      CRM_Core_Error::debug_var('CiviCRM API params', $params);
+      CRM_Core_Error::debug_var('CiviCRM API Call Error', $e->getMessage());
+      return;
+    }
+
+    return $result;
+  }
 }

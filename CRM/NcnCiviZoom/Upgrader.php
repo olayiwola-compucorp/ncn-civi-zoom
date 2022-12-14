@@ -218,4 +218,11 @@ class CRM_NcnCiviZoom_Upgrader extends CRM_NcnCiviZoom_Upgrader_Base {
     CRM_NcnCiviZoom_Utils::forUpgrade1011();
     return TRUE;
   }
+
+  //Upgrade function to create push to zoom activity type
+  public function upgrade_1012(){
+    $this->ctx->log->info('Applying update 1012');
+    CRM_NcnCiviZoom_Utils::createPushToZoomActivityType();
+    return TRUE;
+  }
 }

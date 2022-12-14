@@ -21,6 +21,7 @@ class CRM_NcnCiviZoom_Constants {
   ,CF_ZOOM_JOIN_LINK = 'Zoom_Join_Link' //Zoom Join link Custom field name
   ,CF_ZOOM_PARTICIPANT_JOIN_LINK = 'Zoom_Participant_Join_Link' //Zoom Join link Custom field name for zoom participant
   ,ZOOM_REGISTRANTS_TABLE_NAME = 'civicrm_zoom_registrants' //Zoom registrants table name
+  ,PUSH_TO_ZOOM_ACTIVITY_TYPE_NAME = 'Push_To_Zoom' // Push to Zoom Activity type
   ;
 
   public static $allZoomParticipantDataFields = array('user_id', 'name', 'email', 'join_time', 'leave_time', 'duration', 'registrant_id', 'first_name', 'last_name', 'address', 'city', 'country', 'zip', 'state', 'indusrty', 'job_title');
