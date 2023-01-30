@@ -372,11 +372,11 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
                 //Civi::log()->warning(print_r($instances_result, 1));			
 	        foreach ($instances_result['meetings'] as $key => $instance) {
                   //Civi::log()->warning(print_r('instance uuid: ' . $instance['uuid'], 1));			
-	          $urls[] = $settings['base_url'] . "/past_meetings/" . $instance['uuid'] . "/participants?&page_size=".$pageSize;
+	          $urls[] = $settings['base_url'] . "/past_meetings/" . urlencode(urlencode($instance['uuid'])) . "/participants?&page_size=".$pageSize;
 	        }
 
 		} elseif (!empty($webinarId)) {
-	  	$url = $settings['base_url'] . "/past_webinars/$webinarId/absentees?&page_size=".$pageSize;
+                $url = $settings['base_url'] . "/past_webinars/$webinarId/absentees?&page_size=".$pageSize;
 		$urls = [$url];
 	  	$array_name = 'absentees';
 	  	$key_name = 'email';
@@ -394,7 +394,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 				'Authorization' => "Bearer $token"
 			])->get($fetchUrl);
 			$result = $response->json();
-			CRM_Core_Error::debug_var('zoom result', $result);
+			# CRM_Core_Error::debug_var('zoom result', $result);
 			if(!empty($result[$array_name])){
 				$list = $result[$array_name];
 				foreach ($list as $item) {
