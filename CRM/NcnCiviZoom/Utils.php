@@ -876,7 +876,7 @@ class CRM_NcnCiviZoom_Utils {
   public static function forUpgrade1007(){
     $cGName = CRM_NcnCiviZoom_Constants::CG_Event_Zoom_Notes;
     $cFName = CRM_NcnCiviZoom_Constants::CF_ZOOM_JOIN_LINK;
-    $cF2Name = CRM_NcnCiviZoom_Constants::CF_ZOOM_REGISTRATION_LINK;
+    $cF2Name = CRM_NcnCiviZoom_Constants::CF_ZOOM_REGISTER_LINK;
 
     $cGId = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_CustomGroup', $cGName, 'id', 'name');
     if(!empty($cGId)){
