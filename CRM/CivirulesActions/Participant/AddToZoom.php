@@ -426,87 +426,87 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
       return [];
     }
     $object = new CRM_CivirulesActions_Participant_AddToZoom;
-	  $webinarId = $object->getWebinarID($eventId);
-	  $meetingId = $object->getMeetingID($eventId);
-	  $returnZoomList = [];
-	  if(empty($webinarId) && empty($meetingId)){
-	  	return $returnZoomList;
-	  }
-		$url = $array_name = $key_name = '';
-		$accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($eventId);
-		$settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
-		CRM_NcnCiviZoom_Utils::checkPageSize($pageSize);
-		if(!empty($meetingId)){
-			// Calling Meeting participants report api
-	  	$url = $settings['base_url'] . "/report/meetings/$meetingId/participants?&page_size=".$pageSize;
-	  	$array_name = 'participants';
-	  	$key_name = 'user_email';
-		} elseif (!empty($webinarId)) {
-			// Calling Webinar absentees api
-	  	$url = $settings['base_url'] . "/past_webinars/$webinarId/absentees?&page_size=".$pageSize;
-	  	$array_name = 'absentees';
-	  	$key_name = 'email';
-		}
-	  $token = $object->createJWTToken($accountId);
+    $webinarId = $object->getWebinarID($eventId);
+    $meetingId = $object->getMeetingID($eventId);
+    $returnZoomList = [];
+    if (empty($webinarId) && empty($meetingId)){
+      return $returnZoomList;
+    }
 
-	  $result = [];
-	  $next_page_token = null;
-		do {
-			$fetchUrl = $url.$next_page_token;
-		  $token = $object->createJWTToken($accountId);
-			$response = Zttp::withHeaders([
-				'Content-Type' => 'application/json;charset=UTF-8',
-				'Authorization' => "Bearer $token"
-			])->get($fetchUrl);
-			$result = $response->json();
-			CRM_Core_Error::debug_var('getZoomParticipantsData zoom result', $result);
-			if(!empty($result[$array_name])){
-				$list = $result[$array_name];
-				foreach ($list as $item) {
-					$returnZoomList[$item[$key_name]][] = $item;
-				}
-			}
-			$next_page_token = '&next_page_token='.$result['next_page_token'];
-		} while ($result['next_page_token']);
+    $url = $array_name = $key_name = '';
+    $accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($eventId);
+    $settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
+    CRM_NcnCiviZoom_Utils::checkPageSize($pageSize);
+    if (!empty($meetingId)){
+      // Calling Meeting participants report api
+      $url = $settings['base_url'] . "/report/meetings/$meetingId/participants?&page_size=".$pageSize;
+      $array_name = 'participants';
+      $key_name = 'user_email';
+    } elseif (!empty($webinarId)) {
+     // Calling Webinar absentees api
+     $url = $settings['base_url'] . "/past_webinars/$webinarId/absentees?&page_size=".$pageSize;
+     $array_name = 'absentees';
+     $key_name = 'email';
+   }
+   $token = $object->createJWTToken($accountId);
 
-		if (!empty($webinarId)) {
-		  // Calling Webinar participants report api also
-	  	  $url = $settings['base_url'] . "/report/webinars/$webinarId/participants?&page_size=".$pageSize;
-	  	  $array_name = 'participants';
-	  	  $key_name = 'user_email';
-		  $token = $object->createJWTToken($accountId);
+   $result = [];
+   $next_page_token = null;
+   do {
+     $fetchUrl = $url.$next_page_token;
+     $token = $object->createJWTToken($accountId);
+     $response = Zttp::withHeaders([
+       'Content-Type' => 'application/json;charset=UTF-8',
+       'Authorization' => "Bearer $token"
+     ])->get($fetchUrl);
+     $result = $response->json();
+     CRM_Core_Error::debug_var('getZoomParticipantsData zoom result', $result);
+     if (!empty($result[$array_name])){
+       $list = $result[$array_name];
+       foreach ($list as $item) {
+         $returnZoomList[$item[$key_name]][] = $item;
+       }
+     }
+     $next_page_token = '&next_page_token='.$result['next_page_token'];
+   } while ($result['next_page_token']);
 
-		  $result = [];
-		  $next_page_token = null;
-		  do {
-		    $fetchUrl = $url.$next_page_token;
-		    $token = $object->createJWTToken($accountId);
-		    $response = Zttp::withHeaders([
-		      'Content-Type' => 'application/json;charset=UTF-8',
-		      'Authorization' => "Bearer $token"
-		    ])->get($fetchUrl);
-		    $result = $response->json();
+   if (!empty($webinarId)) {
+     // Calling Webinar participants report api also
+     $url = $settings['base_url'] . "/report/webinars/$webinarId/participants?&page_size=".$pageSize;
+     $array_name = 'participants';
+     $key_name = 'user_email';
+     $token = $object->createJWTToken($accountId);
+     $result = [];
+     $next_page_token = null;
+     do {
+       $fetchUrl = $url.$next_page_token;
+       $token = $object->createJWTToken($accountId);
+       $response = Zttp::withHeaders([
+         'Content-Type' => 'application/json;charset=UTF-8',
+	 'Authorization' => "Bearer $token"
+       ])->get($fetchUrl);
+       $result = $response->json();
 
-                    // [SB] cam/cam-civicrm#138 Switch over to registrants b/c zoom is returning that as the array key
-                    if (empty($result[$array_name]) && !empty($result['registrants'])) {
-                      $array_name = 'registrants';
-                    }
+       // [SB] cam/cam-civicrm#138 Switch over to registrants b/c zoom is returning that as the array key
+       if (empty($result[$array_name]) && !empty($result['registrants'])) {
+         $array_name = 'registrants';
+       }
 
-		    CRM_Core_Error::debug_var('getZoomParticipantsData zoom result', $result);
-		    if (!empty($result[$array_name])) {
-		      $list = $result[$array_name];
-		      foreach ($list as $item) {
-                        // [SB] Webinars seem to be returning email key not user_email
-                        if (!empty($item['user_email'])) {
-                          $returnZoomList[$item['user_email']][] = $item;
-                        } elseif (!empty($item['email'])) {
-                          $returnZoomList[$item['name']][] = $item;
-                        }
-		      }
-		    }
-		    $next_page_token = '&next_page_token='.$result['next_page_token'];
-		  } while ($result['next_page_token']);
-		}
+       CRM_Core_Error::debug_var('getZoomParticipantsData zoom result', $result);
+       if (!empty($result[$array_name])) {
+         $list = $result[$array_name];
+	 foreach ($list as $item) {
+           // [SB] Webinars seem to be returning email key not user_email
+           if (!empty($item['user_email'])) {
+             $returnZoomList[$item['user_email']][] = $item;
+           } elseif (!empty($item['email'])) {
+             $returnZoomList[$item['name']][] = $item;
+           }
+	 }
+       }
+       $next_page_token = '&next_page_token='.$result['next_page_token'];
+     } while ($result['next_page_token']);
+   }
 
     return $returnZoomList;
   }
