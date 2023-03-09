@@ -12,18 +12,19 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
 
   public function preProcess() {
     CRM_Utils_System::setTitle(ts("Import Participant"));
-    $this->_id = CRM_Utils_Request::retrieve('id', 'Int', CRM_Core_DAO::$_nullObject);
+    $this->_id = CRM_Utils_Request::retrieve('id', 'Int', $this);
     $session = CRM_Core_Session::singleton();
     $session->pushUserContext(CRM_Utils_System::url('civicrm/zoom/importparticipant',"reset=1"));
     parent::preProcess();
   }
 
   public function buildQuickForm() {
-    $this->_id = CRM_Utils_Request::retrieve('id', 'Int', CRM_Core_DAO::$_nullObject);
+    $this->_id = CRM_Utils_Request::retrieve('id', 'Int', $this);
+
     $zoomRegistrant = CRM_NcnCiviZoom_Utils::getZoomRegistrantDetailsById($this->_id);
     CRM_Core_Error::debug_var('buildQuickForm zoomRegistrant', $zoomRegistrant);
   	$getContactsQuery = "
-  		SELECT
+		SELECT
 				c.id,
 				c.display_name as d_name
 			FROM civicrm_contact c
@@ -52,7 +53,7 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
     if(count($selectOptions) == 2){
     	$defaults['change_contact_id'] = key( array_slice( $selectOptions, -1, 1, TRUE ) );
     }
-    CRM_Core_Error::debug_var('buildQuickForm default', $default);
+    CRM_Core_Error::debug_var('buildQuickForm default', $defaults);
 
     $event_title = CRM_Core_DAO::singleValueQuery('SELECT title FROM civicrm_event WHERE id = '.$zoomRegistrant['event_id']);
     $this->assign('current_event', $event_title);
@@ -68,6 +69,7 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
         'isDefault' => TRUE,
       ),
     ));
+
     $this->setDefaults($defaults);
 
     parent::buildQuickForm();
@@ -75,7 +77,6 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
 
   public function postProcess() {
     $values = $this->exportValues();
-
     $zoomRegistrant = CRM_NcnCiviZoom_Utils::getZoomRegistrantDetailsById($this->_id);
 
     try {
@@ -98,8 +99,8 @@ class CRM_NcnCiviZoom_Form_ImportParticipant extends CRM_Core_Form {
     }
 
     $createParticipantApiParams = array(
-    	'event_id' => $zoomRegistrant['event_id'],
-    	'contact_id' => $values['change_contact_id'],
+	'event_id' => $zoomRegistrant['event_id'],
+	'contact_id' => $values['change_contact_id'],
       'status_id' => 'Registered',
     );
     if(!empty($eventDetails['values'][0]['default_role_id'])){

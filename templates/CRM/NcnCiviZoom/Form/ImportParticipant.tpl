@@ -29,7 +29,7 @@
         <td id="selected_contact_id"></td>
         <td id="display_name_full"></td>
         <td id="email_id"></td>
-        <td id="no_of_memberhips"></td>
+        <td id="no_of_memberships"></td>
         <td id="no_of_contributions"></td>
         <td id="no_of_event_registrations"></td>
         <td><a id="view_contact">View</a></td>
@@ -74,7 +74,7 @@ CRM.$(function($) {
     $("#selected_contact_id").text("");
     $("#display_name_full").text("");
     $("#email_id").text("");
-    $("#no_of_memberhips").text("");
+    $("#no_of_memberships").text("");
     $("#no_of_contributions").text("");
     $("#no_of_event_registrations").text("");
     $("#view_contact").removeAttr('href');
@@ -84,6 +84,9 @@ CRM.$(function($) {
     emptyContactDetailsTable();
     $("#selected_contact_id").text(cId);
     var contactUrl = CRM.url('civicrm/contact/view', {reset: 1, cid: cId});
+    $("#view_contact").attr("href", contactUrl);
+    $("#view_contact").attr("target", "_blank");
+/*
     var dataUrl = {/literal}"{crmURL p='civicrm/ajax/rest' h=0 q='className=CRM_NcnCiviZoom_Page_AJAX&fnName=getContactDetails'}"{literal}
     dataUrl += '&id='+cId;
     $.ajax({
@@ -98,7 +101,43 @@ CRM.$(function($) {
         $("#no_of_contributions").text(data.data.contributions);
         $("#no_of_event_registrations").text(data.data.event_registrations);
       }
+    //});
+*/
+
+    CRM.api3('Contact', 'getsingle', {
+      "return": ["display_name", "email"],
+      "id": cId
+    }).then(function(result) {
+      $("#display_name_full").text(result.display_name);
+      $("#email_id").text(result.email);
+    }, function(error) {
+      // oops
     });
+
+    CRM.api3('Membership', 'getcount', {
+      "contact_id": cId
+    }).then(function(result) {
+      $("#no_of_memberships").text(result.result);
+    }, function(error) {
+      // oops
+    });
+
+    CRM.api3('Contribution', 'getcount', {
+      "contact_id": cId
+    }).then(function(result) {
+      $("#no_of_contributions").text(result.result);
+    }, function(error) {
+      // oops
+    });
+
+    CRM.api3('Participant', 'getcount', {
+      "contact_id": cId
+    }).then(function(result) {
+      $("#no_of_event_registrations").text(result.result);
+    }, function(error) {
+      // oops
+    });
+
     $('#show_contact_details').find('td').css('text-align', 'center');
     $('#show_contact_details').find('th').css('text-align', 'center');
     $("#show_contact_details").show();
