@@ -1,8 +1,5 @@
 <?php
 
-use Firebase\JWT\JWT;
-use Zttp\Zttp;
-
 use CRM_NcnCiviZoom_ExtensionUtil as E;
 
 /**
@@ -16,7 +13,7 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
   public $_act = NULL;
 
   public function preProcess() {
-    CRM_Utils_System::setTitle(ts("Zoom Settings"));
+    CRM_Utils_System::setTitle(ts("Zoom Account Settings"));
     $this->_id = CRM_Utils_Request::retrieve('id', 'String', $this);
     $this->_act = CRM_Utils_Request::retrieve('act', 'Positive', $this);
     //setting the user context to zoom accounts list page
@@ -58,13 +55,14 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       ));
     }
 
-    if($this->_act == 2 || $this->_act == 1){
-      if(($this->_act == 2) && !empty($this->_id)){
+    if ($this->_act == CRM_Core_Action::UPDATE || $this->_act == CRM_Core_Action::ADD) {
+      if (($this->_act == CRM_Core_Action::UPDATE) && !empty($this->_id)) {
         $zoomSettingsToEdit = CRM_NcnCiviZoom_Utils::getZoomAccountSettingsByIdOrName($this->_id);
         $this->zoomName = $zoomSettingsToEdit['name'];
         $this->assign('zoomName', $this->zoomName);
-      } else{
-        $this->zoomName = 'New';
+      }
+      else {
+        $this->zoomName = E::ts('New Account');
         $this->assign('zoomName', $this->zoomName);
       }
 
@@ -73,12 +71,16 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       $this->add('text', 'user_id', ts('User Email'), array(
         'size' => 48,
       ), FALSE);
-      $this->add('password', 'api_key', ts('Api Key'), array(
-        'size' => 48,
-      ), TRUE);
-      $this->add('password', 'secret_key', ts('Secret Key'), array(
-        'size' => 48,
-      ), TRUE);
+
+      $oauth_clients = ['' => E::ts('- select -')] + \Civi\Api4\OAuthClient::get(FALSE)
+        ->addWhere('provider', '=', 'zoom')
+        ->execute()
+        ->indexBy('id')
+        ->column('guid');
+
+      $this->add('select', 'oauth_client_id', E::ts('OAuth Client'), $oauth_clients, TRUE);
+      $this->add('text', 'account_id', E::ts('Account ID'), ['size' => 48], TRUE);
+
       $testButton = array(
         'type' => 'upload',
         'name' => ts('Test Settings'),
@@ -103,9 +105,6 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
 
     // add form elements
     if(empty($this->_id) && empty($this->_act)){
-      $this->add('text', 'base_url', ts('Base Url'), array(
-        'size' => 48,
-      ), TRUE);
       $this->add(
         'select',
         'custom_field_id_webinar',
@@ -138,9 +137,6 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       );
       $this->addSelect('import_email_location_type', $emailTypeProps);
 
-      $editAction = CRM_Core_Action::UPDATE;
-      $delAction = CRM_Core_Action::DELETE;
-      $addAction = CRM_Core_Action::ADD;
       $rows = CRM_NcnCiviZoom_Utils::getAllZoomAccountSettings();
       foreach ($rows as $Id => $values) {
         if(strlen($values['api_key']) > 4){
@@ -150,8 +146,8 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
           $rows[$Id]['secret_key'] = substr($values['secret_key'], 0, 4).(str_repeat('*',strlen($values['secret_key']) - 4));
         }
         if (!$deleteAction) {
-          $editURL = CRM_Utils_System::href('Edit', 'civicrm/Zoom/zoomaccounts', 'reset=1&act='.$editAction.'&id='.$Id);
-          $deleteURL = CRM_Utils_System::href('Delete', 'civicrm/Zoom/zoomaccounts', 'reset=1&act='.$delAction.'&id='.$Id);
+          $editURL = CRM_Utils_System::href('Edit', 'civicrm/Zoom/zoomaccounts', 'reset=1&act='.CRM_Core_Action::UPDATE.'&id='.$Id);
+          $deleteURL = CRM_Utils_System::href('Delete', 'civicrm/Zoom/zoomaccounts', 'reset=1&act='.CRM_Core_Action::DELETE.'&id='.$Id);
           $rows[$Id]['action'] = sprintf("<span>%s &nbsp;/&nbsp; %s</span>", $editURL, $deleteURL, $Id);
           $testResult = self::testAPIConnectionSettings($Id);
           $ext = 'ncn-civi-zoom';
@@ -193,12 +189,11 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
   }
 
   public function formRule($fields) {
-    $errors = array();
+    $errors = [];
 
     if (!empty($fields['user_id'])) {
       $tableName = CRM_NcnCiviZoom_Constants::ZOOM_ACCOUNT_SETTINGS;
       $zoomAccountByUser = CRM_Core_Dao::singleValueQuery("SELECT id FROM {$tableName} WHERE user_id = %1", array(1 => array($fields['user_id'], 'String')));
-
       $duplicateAccount = FALSE;
 
       //For update action
@@ -213,7 +208,6 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       if (!empty($zoomAccountByUser) && empty($fields['id'])) {
         $duplicateAccount = TRUE;
       }
-
 
       if ($duplicateAccount) {
         $userId = $fields['user_id'];
@@ -258,68 +252,62 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
   public function postProcess() {
     $buttonName = $this->controller->getButtonName();
     $values = $this->exportValues();
+
     if ($buttonName == $this->getButtonName('upload', 'done')) {
       $result = self::testAPIConnectionSettings($this->_id);
       $redirectUrl = CRM_Utils_System::url('civicrm/Zoom/zoomaccounts', 'reset=1&act='.$this->_act."&id=".$this->_id);
-    } else {
-      $editAction = CRM_Core_Action::UPDATE;
-      $delAction = CRM_Core_Action::DELETE;
-      $addAction = CRM_Core_Action::ADD;
-
+    }
+    else {
       $tableName = CRM_NcnCiviZoom_Constants::ZOOM_ACCOUNT_SETTINGS;
-      if(($this->_act == $editAction) && !empty($this->_id)){
-        //Update the existing  settings
-        $api_key      = $values['api_key'];
-        $secret_key   = $values['secret_key'];
-        $zoom_name    = $values['name'];
 
-        $queryParams = array(
-          1 => array($zoom_name, 'String'),
-          2 => array($api_key, 'String'),
-          3 => array($secret_key, 'String'),
-          4 => array($this->_id, 'Integer'),
-        );
-
-        $extraParams = NULL;
-        $user_id     = $values['user_id'];
-        if (!empty($user_id)) {
-          $extraParams = ", user_id = %5";
-          $queryParams[5] = array($user_id, 'String');
-        }
-
-        $query = "UPDATE {$tableName} SET name = %1, api_key = %2, secret_key = %3 {$extraParams} WHERE id = %4";
-        CRM_Core_Dao::executeQuery($query, $queryParams);
-
-        $result['message'] = ts('Zoom account settings have been updated');
-        $result['type'] = 'success';
-
-      } elseif (($this->_act == $addAction) && empty($this->_id)) {
-        // Add new zoom setting
+      if ($this->_act == CRM_Core_Action::UPDATE || $this->_act == CRM_Core_Action::ADD) {
+        // Create or update the existing settings
+        $oauth_client_id = $values['oauth_client_id'];
+        $account_id = $values['account_id'];
         $zoom_name = $values['name'];
-        $api_key      = $values['api_key'];
-        $secret_key   = $values['secret_key'];
-        $queryParams = array(
-          1 => array($zoom_name, 'String'),
-          2 => array($api_key, 'String'),
-          3 => array($secret_key, 'String'),
-        );
+        $user_id = $values['user_id'];
 
-        $extraColumn = $extraValue = NULL;
-        $user_id     = $values['user_id'];
-        if (!empty($user_id)) {
-          $extraColumn = ", user_id";
-          $extraValue = ", %4";
-          $queryParams[4] = array($user_id, 'String');
+        $queryParams = [
+          1 => [$zoom_name, 'String'],
+          2 => [$oauth_client_id, 'Positive'],
+          3 => [$account_id, 'String'],
+        ];
+
+        if (($this->_act == CRM_Core_Action::UPDATE) && !empty($this->_id)) {
+          $queryParams[4] = [$this->_id, 'Integer'];
+
+          $extraParams = '';
+          if (!empty($user_id)) {
+            $extraParams = ", user_id = %5";
+            $queryParams[5] = [$user_id, 'String'];
+          }
+          else {
+            $extraParams = ", user_id = NULL";
+          }
+
+          $query = "UPDATE {$tableName} SET name = %1, oauth_client_id = %2, account_id = %3 {$extraParams} WHERE id = %4";
+          CRM_Core_Dao::executeQuery($query, $queryParams);
+
+          $result['message'] = ts('Zoom account settings have been updated');
+          $result['type'] = 'success';
         }
+        else {
+          $extraColumn = $extraValue = '';
+          if (!empty($user_id)) {
+            $extraColumn = ", user_id";
+            $extraValue = ", %4";
+            $queryParams[4] = [$user_id, 'String'];
+          }
 
-        $query = "INSERT INTO {$tableName} (name, api_key, secret_key {$extraColumn}) VALUES (%1, %2 , %3 {$extraValue})";
-        CRM_Core_Dao::executeQuery($query, $queryParams);
-        $result['message'] = ts('Your new zoom account settings have been saved');
-        $result['type'] = 'success';
+          $query = "INSERT INTO {$tableName} (name, oauth_client_id, account_id {$extraColumn}) VALUES (%1, %2, %3 {$extraValue})";
+          CRM_Core_Dao::executeQuery($query, $queryParams);
+          $result['message'] = ts('Your new zoom account settings have been saved');
+          $result['type'] = 'success';
+        }
       }
 
       //Delete the zoom setting
-      if(($this->_act == $delAction) && !empty($this->_id)){
+      if(($this->_act == CRM_Core_Action::DELETE) && !empty($this->_id)){
         $queryParams = array(1 => array($this->_id, 'Integer'));
         $query = "DELETE FROM {$tableName} WHERE id=%1";
         CRM_Core_Dao::executeQuery($query, $queryParams);
@@ -341,7 +329,7 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       $redirectUrl    = CRM_Utils_System::url('civicrm/Zoom/zoomaccounts', 'reset=1');
     }
 
-    CRM_Core_Session::setStatus($result['message'], ts('Zoom Settings'), $result['type']);
+    CRM_Core_Session::setStatus($result['message'], ts('Zoom Account Settings'), $result['type']);
     CRM_Utils_System::redirect($redirectUrl);
     parent::postProcess();
   }
@@ -385,9 +373,10 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
     }
 
     $url = $settings['base_url'] . "/report/daily";
-    $token = self::createJWTToken($id);
+    $token = self::createOAuthToken($id);
     $params['year'] = date('Y');
     $params['month'] = date('m');
+/* @todo Test fetching /account/me?
     $response = Zttp::withHeaders([
       'Content-Type' => 'application/json;charset=UTF-8',
       'Authorization' => "Bearer $token"
@@ -401,23 +390,38 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       $msg = $result['message'];
       $type = 'alert';
     }
+*/
 
     $status['message'] = $msg;
     $status['type'] = $type;
     return $status;
   }
 
-  public static function createJWTToken($id = null) {
+  public static function createOAuthToken($id = null) {
     if(empty($id)){
       return null;
     }
     $settings = CRM_NcnCiviZoom_Utils::getZoomSettings($id);
-    $key = $settings['secret_key'];
-    $payload = array(
-        "iss" => $settings['api_key'],
-        "exp" => strtotime('+1 hour')
+
+    $client = \Civi\Api4\OAuthClient::get(FALSE)
+      ->addWhere('id', '=', $settings['oauth_client_id'])
+      ->addWhere('is_active', '=', TRUE)
+      ->execute()
+      ->single();
+
+    /** @var OAuthTokenFacade $tokenService */
+    $tokenService = \Civi::service('oauth2.token');
+
+    $tokenRecord = $tokenService->init(
+      [
+        'client' => $client,
+        // 'scope' => 'foo',
+        'tag' => NULL,
+        'storage' => 'OAuthSysToken',
+        'grant_type' => 'account_credentials',
+        'cred' => ['account_id' => $settings['account_id']],
+      ]
     );
-    $jwt = JWT::encode($payload, $key);
 
     return $jwt;
   }

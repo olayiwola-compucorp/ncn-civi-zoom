@@ -11,6 +11,7 @@
   <version>2.4</version>
   <requires>
     <ext>org.civicoop.civirules</ext>
+    <ext>oauth-client</ext>
   </requires>
   <develStage>beta</develStage>
   <compatibility>

@@ -7,8 +7,8 @@
  * @package CiviCRM
  */
 class CRM_NcnCiviZoom_Constants {
-        //Zoom account settings - table name
-  CONST ZOOM_ACCOUNT_SETTINGS = 'zoom_account_settings',
+  // Zoom account settings - table name
+  CONST ZOOM_ACCOUNT_SETTINGS = 'civicrm_zoom_account',
   ID         = 'id', // id
   NAME       = 'name', //name of the account
   API_KEY    = 'api_key', //api_key of the account

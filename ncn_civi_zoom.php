@@ -489,3 +489,25 @@ function ncn_civi_zoom_civicrm_links($op, $objectName, $objectId, &$links, &$mas
     );
   }
 }
+
+/**
+ * Implements hook_civicrm_oauthProviders().
+ *
+ * Copied from the oauth_client extension.
+ */
+function ncn_civi_zoom_civicrm_oauthProviders(&$providers) {
+  $ingest = function($pat) use (&$providers) {
+    $files = (array) glob($pat);
+    foreach ($files as $file) {
+      if (!defined('CIVICRM_TEST') && preg_match(';\.test\.json$;', $file)) {
+        continue;
+      }
+      $name = preg_replace(';\.(dist\.|test\.|)json$;', '', basename($file));
+      $provider = json_decode(file_get_contents($file), 1);
+      $provider['name'] = $name;
+      $providers[$name] = $provider;
+    }
+  };
+
+  $ingest(__DIR__ . '/providers/*.json');
+}

@@ -1,15 +1,12 @@
-{* HEADER *}
+{crmScope extensionKey="ncn-civi-zoom"}
 <div class="crm-block crm-form-block">
-{* FIELD EXAMPLE: OPTION 1 (AUTOMATIC LAYOUT) *}
-
 
 {if $deleteAction}
   <div><h2>Delete {$zoomName} zoom account settings?</h2></div>
 {/if}
 
-
 {if ($act eq 1) || ($act eq 2)}
-  <h1>Enter {$zoomName} Settings</h1>
+  <h2>{ts 1=$zoomName}Zoom Account: %1{/ts}</h2>
   <table class="form-layout-compressed">
     <tbody>
       <tr class="custom_field-row">
@@ -23,12 +20,16 @@
         </td>
       </tr>
       <tr class="custom_field-row">
-        <td class="label">{$form.api_key.label}</td>
-        <td class="">{$form.api_key.html}</td>
+        <td class="label">{$form.oauth_client_id.label}</td>
+        <td>{$form.oauth_client_id.html}
+          <div class="description">{ts}The OAuth Clients are managed on the CiviCRM OAuth Client Settings screen. Register the client there, then select it here. This is admittedly odd, but we wanted to avoid duplicate interfaces for managing credentials.{/ts}</div>
+        </td>
       </tr>
       <tr class="custom_field-row">
-        <td class="label">{$form.secret_key.label}</td>
-        <td class="">{$form.secret_key.html}</td>
+        <td class="label">{$form.account_id.label}</td>
+        <td>{$form.account_id.html}
+          <div class="description">{ts}The Zoom Account ID is visible on the App Credentials section. Go to: https://marketplace.zoom.us/user/build then click on the app you created.{/ts}</div>
+        </td>
       </tr>
     </tbody>
   </table>
@@ -69,17 +70,14 @@
 {if !$act && !$id}
   </br></br><h2>Common zoom account settings</h2>
   <div class="crm-section">
-    <div class="label">{$form.base_url.label}</div>
-    <div class="content">{$form.base_url.html}</div>
-    <br>
     <div class="label">{$form.custom_field_id_webinar.label}</div>
     <div class="content">{$form.custom_field_id_webinar.html}
       <span class="description">
-      </br>
       {ts}Select the event custom field which holds the Zoom Webinar ID{/ts}
       </span>
     </div>
-    </br>
+  </div>
+  <div class="crm-section">
     <div class="label">{$form.custom_field_id_meeting.label}</div>
     <div class="content">{$form.custom_field_id_meeting.html}
       <span class="description">
@@ -107,15 +105,9 @@
   </div>
 {/if}
 
-
-{* FIELD EXAMPLE: OPTION 2 (MANUAL LAYOUT)
-
-{* FOOTER *}
 <div class="crm-submit-buttons">
-{include file="CRM/common/formButtons.tpl" location="bottom"}
+  {include file="CRM/common/formButtons.tpl" location="bottom"}
 </div>
 </div>
 
-{literal}
-
-{/literal}
+{/crmScope}

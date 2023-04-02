@@ -26,7 +26,7 @@ A helper Youtube installation video can be found [here](https://youtu.be/6rta9V3
 
 Follow the Setup guide below, the key steps are;
 
-* Create a connector in Zoom (JWT App)
+* Create a connector in Zoom (Oauth server-to-server App)
 * Create relevant custom fields in CiviCRM for Events to hold zoom information
 * Install the CiviCRM Zoom Extension. More details [here](https://docs.civicrm.org/sysadmin/en/latest/customize/extensions/#installing-a-new-extension) about installing extensions in CiviCRM.
 * Connect CiviCRM to Zoom via settings
@@ -36,12 +36,14 @@ Following this you will then have the option, per event, to pass information ove
 All of the setup and useage steps are outlined below.
 
 ## Setup
-### Sign into Zoom and Create a JWT App
 
-The JWT App within your Zoom account will allow you to connect CiviCRM to zoom, so that it can pass over participant information.
+### Sign into Zoom and Create an Oauth App
 
-* Create a JWT app in your zoom account's [zoom market place](https://marketplace.zoom.us/develop/create) page using the instructions given in [the guide](https://marketplace.zoom.us/docs/guides/build/jwt-app).
-* Keep a copy of the **API Key** and **API Secret Key** credentials, you'll need them to enter them into the CiviCRM Zoom settings
+The Oauth App within your Zoom account will allow you to connect CiviCRM to Zoom, so that it can pass over participant information.
+
+* Create an "Server to server Oauth app" in your zoom account's [zoom market place](https://marketplace.zoom.us/develop/create) page using the instructions given in [the guide](https://marketplace.zoom.us/docs/guides/build/server-to-server-oauth-app/).
+* Keep a copy of the **Account ID**, **Client ID** and **Client secret**, you'll need them to enter them into theapp CiviCRM Zoom settings
+* Scopes: meeting:master, webinar:master, user:read:admin
 
 ### Sign into CiviCRM and setup custom fields for Zoom
 Create custom fields against the Event entity (you can select which types of events Zoom fields applicable too or leave blank for all events).
