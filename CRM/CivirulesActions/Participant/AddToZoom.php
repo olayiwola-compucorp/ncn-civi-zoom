@@ -1,7 +1,6 @@
 <?php
 
-use Firebase\JWT\JWT;
-use Zttp\Zttp;
+use CRM_NcnCiviZoom_Utils as CiviZoomUtils;
 
 class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 
@@ -32,7 +31,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	 */
 	private function getWebinarID($event) {
 		$result;
-		$customField = CRM_NcnCiviZoom_Utils::getWebinarCustomField();
+		$customField = CiviZoomUtils::getWebinarCustomField();
 		try {
 			$apiResult = civicrm_api3('Event', 'get', [
 			  'sequential' => 1,
@@ -59,7 +58,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	 */
 	private function getMeetingID($event) {
 		$result;
-		$customField = CRM_NcnCiviZoom_Utils::getMeetingCustomField();
+		$customField = CiviZoomUtils::getMeetingCustomField();
 		try {
 			$apiResult = civicrm_api3('Event', 'get', [
 			  'sequential' => 1,
@@ -118,8 +117,8 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	 */
 	private function addParticipant($participant, $entityID, $triggerData, $entity) {
 		$event = $triggerData->getEntityData('Event');
-		$accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($event['id']);
-		$settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
+		$accountId = CiviZoomUtils::getZoomAccountIdByEventId($event['id']);
+		$settings = CiviZoomUtils::getZoomSettings();
 		if($entity == 'Webinar'){
 			$url = $settings['base_url'] . "/webinars/$entityID/registrants";
 		} elseif($entity == 'Meeting'){
@@ -135,11 +134,11 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 		CRM_Core_Error::debug_var('Zoom addParticipant result', $result);
 		if(!empty($result['join_url'])){
 			$participantId = $triggerData->getEntityData('Participant')['participant_id'];
-			CRM_NcnCiviZoom_Utils::updateZoomParticipantJoinLink($participantId, $result['join_url']);
+			CiviZoomUtils::updateZoomParticipantJoinLink($participantId, $result['join_url']);
 		}
 		if(!empty($result['registrant_id'])){
 			$participantId = $triggerData->getEntityData('Participant')['participant_id'];
-			CRM_NcnCiviZoom_Utils::updateZoomParticipantRegistrantId($participantId, $result['registrant_id']);
+			CiviZoomUtils::updateZoomParticipantRegistrantId($participantId, $result['registrant_id']);
 		}
 
 		// Added the registrant_id and event_id to the log
@@ -166,7 +165,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	}
 
 	private function createJWTToken($id) {
-		$settings = CRM_NcnCiviZoom_Utils::getZoomSettings($id);
+		$settings = CiviZoomUtils::getZoomSettings($id);
 		$key = $settings['secret_key'];
 		$payload = array(
 		    "iss" => $settings['api_key'],
@@ -178,8 +177,8 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 
 	public function getJoinUrl($object){
 		$eventId = $object->event_id;
-		$accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($eventId);
-		$settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
+		$accountId = CiviZoomUtils::getZoomAccountIdByEventId($eventId);
+		$settings = CiviZoomUtils::getZoomSettings();
 		$webinar = $object->getWebinarID($eventId);
 		$meeting = $object->getMeetingID($eventId);
 		$url = '';
@@ -205,31 +204,28 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 		return [$joinUrl, $password, $eventType, $registrationUrl];
 	}
 
-	public static function checkEventWithZoom($params){
-		if(empty($params) || empty($params["account_id"])
-			|| empty($params["entityID"])
-			|| empty($params["entity"])){
-			return ['status' => null , 'message' => "Parameters missing"];
-		}
+  /**
+   *
+   */
+  public static function checkEventWithZoom($params) {
+    if(empty($params) || empty($params["account_id"])
+      || empty($params["entityID"])
+      || empty($params["entity"])){
+      return ['status' => null , 'message' => "Parameters missing"];
+    }
 
-		$object = new CRM_CivirulesActions_Participant_AddToZoom;
-		$url = '';
-		$settings = CRM_NcnCiviZoom_Utils::getZoomSettings($params["account_id"]);
-		if($params["entity"] == 'Meeting'){
-	  	$url = $settings['base_url'] . "/meetings/".$params["entityID"];
-		} elseif ($params["entity"] == 'Webinar') {
-	  	$url = $settings['base_url'] . "/webinars/".$params["entityID"];
-		}
+    $object = new CRM_CivirulesActions_Participant_AddToZoom;
+    $url = CiviZoomUtils::convertEntityToURL($params['entity']) . '/' . $params['entityID'];
 
-	  $token = $object->createJWTToken($params["account_id"]);
+    $token = $object->createJWTToken($params["account_id"]);
 
-    //MV: Additional Check by user id if configured in settings
+    // Additional Check by user_id if configured in settings
     $userID = CRM_Utils_Array::value('user_id', $settings);
     if (!empty($userID)) {
-      // Does Meeting/Webinar id is belongs to given user ?. If not return validation error.
+      // Does Meeting/Webinar id belong to the given user? If not return validation error.
       $userParams = $params;
       $userParams['user_id'] = $userID;
-      $userDetails = CRM_NcnCiviZoom_Utils::validateMeetingWebinarByUserId($userParams);
+      $userDetails = CiviZoomUtils::validateMeetingWebinarByUserId($userParams);
 
       // If we cannot find user details then return error
       if (empty($userDetails)) {
@@ -240,61 +236,46 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
         return ["status" => 0, "message" => $userDetails['message']];
       }
     }
-    //END
 
-		$response = Zttp::withHeaders([
-			'Content-Type' => 'application/json;charset=UTF-8',
-			'Authorization' => "Bearer $token"
-		])->get($url);
-		$result = $response->json();
-		CRM_Core_Error::debug_var('checkEventWithZoom response', $result);
-		$return = array(
-			'status' => 0,
-			'message' => 'Sorry, unable to verify.',
-		);
+    [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($params['account_id'], $url);
+    // CRM_Core_Error::debug_var('checkEventWithZoom response', $result);
 
-		if($response->isOk()){
-			if(!empty($result['registration_url'])){
-				$return = array("status" => 1, "message" => $params["entity"]." has been verified");
-			}else{
-				$return = array("status" => 0, "message" => "Please enable the Registration as required for the Zoom ".$params["entity"].": ".$params["entityID"]);
-			}
-		} else {
-			$return = array("status" => 0, "message" => $params["entity"]." does not belong to the ".$settings['name']);
-		}
+    if ($isResponseOK) {
+      if(!empty($result['registration_url'])){
+        $return = array("status" => 1, "message" => $params["entity"]." has been verified");
+      }else{
+        $return = array("status" => 0, "message" => "Please enable the Registration as required for the Zoom ".$params["entity"].": ".$params["entityID"]);
+      }
+    }
+    else {
+      $return = array("status" => 0, "message" => $params["entity"]." does not belong to the ".$settings['name']);
+    }
 
-		// Check for additional fields enabled
-		if($return['status']){
-			if($params["entity"] == 'Meeting'){
-		  	$url = $settings['base_url'] . "/meetings/".$params["entityID"]."/registrants/questions";
-			} elseif ($params["entity"] == 'Webinar') {
-		  	$url = $settings['base_url'] . "/webinars/".$params["entityID"]."/registrants/questions";
-			}
-			$response = Zttp::withHeaders([
-				'Content-Type' => 'application/json;charset=UTF-8',
-				'Authorization' => "Bearer $token"
-			])->get($url);
-			$result = $response->json();
-			if($response->isOk()){
-				// Checking for fields other than last_name
-				foreach ($result['questions'] as $question) {
-					if($question['field_name'] != 'last_name' && $question['required']){
-						$return['status'] = -1;
-						$return['message'] = $params["entity"]." has been verified. But participants may not be added to zoom as additional fields are marked as required in zoom.";
-					}
-				}
-				// Checking for custom fields
-				foreach ($result['custom_questions'] as $custom_question) {
-					if($custom_question['required']){
-						$return['status'] = -1;
-						$return['message'] = $params["entity"]." has been verified. But participants may not be added to zoom as custom questions are marked as required in zoom.";
-					}
-				}
-			}
-		}
+    // Check for additional fields enabled
+    if ($return['status']) {
+      $url = CiviZoomUtils::convertEntityToURL($params['entity']) . '/registrants/questions';
+      [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($params['account_id'], $url);
 
-		return $return;
-	}
+      if ($isResponseOK) {
+        // Checking for fields other than last_name
+        foreach ($result['questions'] as $question) {
+          if($question['field_name'] != 'last_name' && $question['required']){
+            $return['status'] = -1;
+            $return['message'] = $params["entity"]." has been verified. But participants may not be added to zoom as additional fields are marked as required in zoom.";
+          }
+        }
+        // Checking for custom fields
+        foreach ($result['custom_questions'] as $custom_question) {
+          if($custom_question['required']){
+            $return['status'] = -1;
+            $return['message'] = $params["entity"]." has been verified. But participants may not be added to zoom as custom questions are marked as required in zoom.";
+          }
+        }
+      }
+    }
+
+    return $return;
+  }
 
   public static function getZoomRegistrants($eventId, $pageSize = 150){
     if(empty($eventId)){
@@ -308,9 +289,9 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 	  	return $zoomRegistrantsList;
 	  }
 		$url = '';
-		$accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($eventId);
-		$settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
-		CRM_NcnCiviZoom_Utils::checkPageSize($pageSize);
+		$accountId = CiviZoomUtils::getZoomAccountIdByEventId($eventId);
+		$settings = CiviZoomUtils::getZoomSettings();
+		CiviZoomUtils::checkPageSize($pageSize);
 		if(!empty($meetingId)){
 	  	$url = $settings['base_url'] . "/meetings/".$meetingId.'/registrants?&page_size='.$pageSize;
 		} elseif (!empty($webinarId)) {
@@ -350,10 +331,10 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
       return $returnZoomList;
     }
     $url = $array_name = $key_name = '';
-    $accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($eventId);
+    $accountId = CiviZoomUtils::getZoomAccountIdByEventId($eventId);
     $token = $object->createJWTToken($accountId);
-    $settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
-    CRM_NcnCiviZoom_Utils::checkPageSize($pageSize);
+    $settings = CiviZoomUtils::getZoomSettings();
+    CiviZoomUtils::checkPageSize($pageSize);
 
    if (!empty($meetingId)) {
       //$url = $settings['base_url'] . "/past_meetings/$meetingId/participants?&page_size=".$pageSize;
@@ -434,9 +415,9 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
     }
 
     $url = $array_name = $key_name = '';
-    $accountId = CRM_NcnCiviZoom_Utils::getZoomAccountIdByEventId($eventId);
-    $settings = CRM_NcnCiviZoom_Utils::getZoomSettings();
-    CRM_NcnCiviZoom_Utils::checkPageSize($pageSize);
+    $accountId = CiviZoomUtils::getZoomAccountIdByEventId($eventId);
+    $settings = CiviZoomUtils::getZoomSettings();
+    CiviZoomUtils::checkPageSize($pageSize);
     if (!empty($meetingId)){
       // Calling Meeting participants report api
       $url = $settings['base_url'] . "/report/meetings/$meetingId/participants?&page_size=".$pageSize;
@@ -523,19 +504,4 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
   		return FALSE;
 	}
 
-  // MV: Add Zttp call function
-  public function requestZttpWithHeader($accountId, $url) {
-
-    $object = new CRM_CivirulesActions_Participant_AddToZoom;
-    $token  = $object->createJWTToken($accountId);
-    $request = Zttp::withHeaders([
-      'Content-Type' => 'application/json;charset=UTF-8',
-      'Authorization' => "Bearer $token"
-    ])->get($url);
-
-    $isRequestOK = $request->isOk();
-    $result = $request->json();
-
-    return [$isRequestOK, $result];
-  }
 }

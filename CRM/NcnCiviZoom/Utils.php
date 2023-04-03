@@ -726,19 +726,21 @@ class CRM_NcnCiviZoom_Utils {
     return FALSE;
   }
 
-  // MV: function to get list of meetings/webinars by account user id.
+  /**
+   * Returns a list of meetings/webinars by account user id
+   */
   public static function getMeetingsWebinarsByUserId($params) {
     if (!empty($params['user_id']) && !empty($params["entity"])) {
       $entity = ($params['entity'] == "Meeting") ? 'meetings' : 'webinars';
-
       $settings = CRM_NcnCiviZoom_Utils::getZoomSettings($params["account_id"]);
       $url = $settings['base_url'] . "/users/".$params['user_id']."/".$entity."/";
-      // fetch all Meeting/Webinar belong to this user.
-      list($isResponseOK, $result) = CRM_CivirulesActions_Participant_AddToZoom::requestZttpWithHeader($params["account_id"], $url);
+
+      // Fetch all Meeting/Webinar belong to this user.
+      list($isResponseOK, $result) = CRM_CivirulesActions_Participant_AddToZoom::zoomApiRequest($params["account_id"], $url);
 
       CRM_Core_Error::debug_var('getMeetingsWebinarsByUserId-isResponseOK', $isResponseOK);
 
-      if($isResponseOK){
+      if ($isResponseOK) {
         $eventList = CRM_Utils_Array::value($entity, $result);
 
         if (empty($eventList) && !empty($result['message'])) {
@@ -753,9 +755,10 @@ class CRM_NcnCiviZoom_Utils {
         $result["{$entity}_options"] = $entityOptions;
         return $result;
       } else {
-        return ["status" => 0, "message" => "User ID: ".$params["user_id"]." does not exists"];
+        return ["status" => 0, "message" => "User ID: ".$params["user_id"]." does not exists: " . $result['message']];
       }
-    }else{
+    }
+    else {
       CRM_Core_Error::debug_log_message('Required Params Missing or not in proper format in  '.__CLASS__.'::'.__FUNCTION__);
       CRM_Core_Error::debug_var('params', $params);
     }
@@ -1445,4 +1448,43 @@ class CRM_NcnCiviZoom_Utils {
 
     return $returnList;
   }
+
+  /**
+   * Returns the entity URL name. Ex: Meeting => meetings
+   */
+  public static function convertEntityToURL(String $entity) {
+    if ($entity == 'Meeting') {
+      return 'meetings';
+    }
+    if ($entity == 'Webinar') {
+      return 'webinars';
+    }
+    throw new Exception('Unknown entity type: ' . $entity);
+  }
+
+  /**
+   * Do a Zoom request
+   */
+  public static function zoomApiRequest(Int $accountId, $url) {
+    $tokenRecord = CRM_NcnCiviZoom_Form_Settings::createOAuthToken($accountId);
+
+    $client = new GuzzleHttp\Client([
+      'base_uri' => 'https://api.zoom.us/v2/',
+      'headers' => [
+        'Authorization' => 'Bearer ' . $tokenRecord['access_token'],
+        'Accept' => 'application/json',
+      ],
+    ]);
+
+    try {
+      $json = (string) $client->get($url)->getBody();
+      $result = json_decode($json, true);
+    }
+    catch (Exception $e) {
+      // @todo Rather weird, catch in parent function?
+      return [false, ['message' => $e->getMessage()]];
+    }
+    return [true, $result];
+  }
+
 }

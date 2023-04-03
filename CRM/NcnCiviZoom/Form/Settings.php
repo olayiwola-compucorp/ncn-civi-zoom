@@ -1,6 +1,7 @@
 <?php
 
 use CRM_NcnCiviZoom_ExtensionUtil as E;
+use CRM_NcnCiviZoom_Utils as CiviZoomUtils;
 
 /**
  * Form controller class
@@ -374,35 +375,43 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
 
     $url = $settings['base_url'] . "/report/daily";
     $token = self::createOAuthToken($id);
-    $params['year'] = date('Y');
-    $params['month'] = date('m');
-/* @todo Test fetching /account/me?
-    $response = Zttp::withHeaders([
-      'Content-Type' => 'application/json;charset=UTF-8',
-      'Authorization' => "Bearer $token"
-    ])->get($url, $params);
-    // Alert to user on success.
-    if ($response->isOk()) {
-      $msg = "Connection settings are correct.";
+
+    [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($id, 'users/me/meetings');
+
+    if ($isResponseOK) {
+      $msg = E::ts("Connection settings are correct.");
       $type = 'success';
     } else {
-      $result = $response->json();
       $msg = $result['message'];
       $type = 'alert';
     }
-*/
 
     $status['message'] = $msg;
     $status['type'] = $type;
     return $status;
   }
 
-  public static function createOAuthToken($id = null) {
+  public static function createOAuthToken($id = null, $forceNew = false) {
     if(empty($id)){
       return null;
     }
+
     $settings = CRM_NcnCiviZoom_Utils::getZoomSettings($id);
 
+    // Check if we have a valid token
+    // They expire after 1h and cannot be renewed
+    $tokenRecord = \Civi\Api4\OAuthSysToken::get(false)
+      ->addWhere('grant_type', '=', 'client_credentials')
+      ->addWhere('client_id', '=', $settings['oauth_client_id'])
+      ->addOrderBy('expires', 'DESC')
+      ->execute()
+      ->first();
+
+    if ($tokenRecord && ($tokenRecord['expires'] + 60) > time()) {
+      return $tokenRecord;
+    }
+
+    // Create a new token
     $client = \Civi\Api4\OAuthClient::get(FALSE)
       ->addWhere('id', '=', $settings['oauth_client_id'])
       ->addWhere('is_active', '=', TRUE)
@@ -423,7 +432,7 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       ]
     );
 
-    return $jwt;
+    return $tokenRecord;
   }
 
 }
