@@ -43,7 +43,7 @@ The Oauth App within your Zoom account will allow you to connect CiviCRM to Zoom
 
 * Create an "Server to server Oauth app" in your zoom account's [zoom market place](https://marketplace.zoom.us/develop/create) page using the instructions given in [the guide](https://marketplace.zoom.us/docs/guides/build/server-to-server-oauth-app/).
 * Keep a copy of the **Account ID**, **Client ID** and **Client secret**, you'll need them to enter them into theapp CiviCRM Zoom settings
-* Scopes: meeting:master, webinar:master, user:read:admin
+* Scopes: meeting:master, meeting:write:admin, webinar:master, webinar:write:admin, user:read:admin
 
 ### Sign into CiviCRM and setup custom fields for Zoom
 Create custom fields against the Event entity (you can select which types of events Zoom fields applicable too or leave blank for all events).
