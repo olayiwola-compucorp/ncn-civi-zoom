@@ -1,5 +1,7 @@
 <?php
 
+use CRM_NcnCiviZoom_ExtensionUtil as E;
+
 /**
  *  NcnCiviZoom utils functions
  *
@@ -42,7 +44,7 @@ class CRM_NcnCiviZoom_Utils {
     return $customField;
   }
 
-  /*
+  /**
    * Output will be an array of all zoom settings
    * as id => [zoom settings]
    */
@@ -56,7 +58,7 @@ class CRM_NcnCiviZoom_Utils {
     return $zoomSettings;
   }
 
-  /*
+  /**
    * Output will be an array as [zoom settings]
    */
   public function getZoomAccountSettingsByIdOrName($id=NULL, $name = null) {
@@ -736,9 +738,7 @@ class CRM_NcnCiviZoom_Utils {
       $url = $settings['base_url'] . "/users/".$params['user_id']."/".$entity."/";
 
       // Fetch all Meeting/Webinar belong to this user.
-      list($isResponseOK, $result) = CRM_CivirulesActions_Participant_AddToZoom::zoomApiRequest($params["account_id"], $url);
-
-      CRM_Core_Error::debug_var('getMeetingsWebinarsByUserId-isResponseOK', $isResponseOK);
+      list($isResponseOK, $result) = self::zoomApiRequest($params["account_id"], $url);
 
       if ($isResponseOK) {
         $eventList = CRM_Utils_Array::value($entity, $result);
@@ -1465,7 +1465,7 @@ class CRM_NcnCiviZoom_Utils {
   /**
    * Do a Zoom request
    */
-  public static function zoomApiRequest(Int $accountId, $url) {
+  public static function zoomApiRequest(Int $accountId, $url, $params = [], $action = 'get') {
     $tokenRecord = CRM_NcnCiviZoom_Form_Settings::createOAuthToken($accountId);
 
     $client = new GuzzleHttp\Client([
@@ -1477,7 +1477,7 @@ class CRM_NcnCiviZoom_Utils {
     ]);
 
     try {
-      $json = (string) $client->get($url)->getBody();
+      $json = (string) $client->$action($url, [GuzzleHttp\RequestOptions::JSON => $params])->getBody();
       $result = json_decode($json, true);
     }
     catch (Exception $e) {

@@ -5,17 +5,10 @@ require_once __DIR__.'/vendor/autoload.php';
 define('ZOOM_SETTINGS', 'Zoom_Settings');
 use CRM_NcnCiviZoom_ExtensionUtil as E;
 
-// use Lcobucci\JWT\Configuration;
-// use Lcobucci\JWT\Signer;
-// use Lcobucci\JWT\Signer\Key;
-// use Dotenv\Dotenv;
-
-// Load .env file
-// $dotenv = Dotenv::createImmutable(__DIR__);
-// $dotenv->load();
-
-function ncn_civi_zoom_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions)
-{
+/**
+ * Implements hook_civicrm_alterAPIPermissions()
+ */
+function ncn_civi_zoom_civicrm_alterAPIPermissions($entity, $action, &$params, &$permissions) {
   $permissions['event']['generatewebinarattendance'] = array('access CiviEvent');
 }
 

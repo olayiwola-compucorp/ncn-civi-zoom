@@ -1,5 +1,6 @@
 <?php
 
+use CRM_NcnCiviZoom_ExtensionUtil as E;
 use CRM_NcnCiviZoom_Utils as CiviZoomUtils;
 
 class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
@@ -120,19 +121,10 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
     $event = $triggerData->getEntityData('Event');
     $accountId = CiviZoomUtils::getZoomAccountIdByEventId($event['id']);
     $settings = CiviZoomUtils::getZoomSettings();
-    if($entity == 'Webinar'){
-      $url = $settings['base_url'] . "/webinars/$entityID/registrants";
-    } elseif($entity == 'Meeting'){
-      $url = $settings['base_url'] . "/meetings/$entityID/registrants";
-    }
-    $token = $this->createJWTToken($accountId);
-    $response = Zttp::withHeaders([
-      'Content-Type' => 'application/json;charset=UTF-8',
-      'Authorization' => "Bearer $token"
-    ])->post($url, $participant);
-    $result = $response->json();
+    $url = CiviZoomUtils::convertEntityToURL($entity) . "/$entityID/registrants";
 
-    CRM_Core_Error::debug_var('Zoom addParticipant result', $result);
+    [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($accountId, $url, $participant, 'post');
+
     if(!empty($result['join_url'])){
       $participantId = $triggerData->getEntityData('Participant')['participant_id'];
       CiviZoomUtils::updateZoomParticipantJoinLink($participantId, $result['join_url']);
@@ -148,7 +140,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
       $msg .= "Registrant Id is ".$result['registrant_id']. ". ";
     }
     // Alert to user on success.
-    if ($response->isOk()) {
+    if ($isResponseOK) {
       $firstName = $participant['first_name'];
       $lastName = $participant['last_name'];
       $msg .= 'Participant Added to Zoom. $entity ID: '.$entityID;
@@ -156,24 +148,13 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 
       CRM_Core_Session::setStatus(
         "$firstName $lastName was added to Zoom $entity $entityID.",
-        ts('Participant added!'),
+        E::ts('Participant added!'),
         'success'
       );
     } else {
       $msg .= $result['message'].' $entity ID: '.$entityID;
       $this->logAction($msg, $triggerData, \PSR\Log\LogLevel::ALERT);
     }
-  }
-
-  private function createJWTToken($id) {
-    $settings = CiviZoomUtils::getZoomSettings($id);
-    $key = $settings['secret_key'];
-    $payload = array(
-      "iss" => $settings['api_key'],
-      "exp" => strtotime('+1 hour')
-    );
-    $jwt = JWT::encode($payload, $key);
-    return $jwt;
   }
 
   public function getJoinUrl($object){
@@ -185,20 +166,22 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
     $url = '';
     $eventType = '';
     if(!empty($meeting)){
-      $url = $settings['base_url'] . "/meetings/".$meeting;
+      $url = "meetings/$meeting";
       $eventType = 'Meeting';
     } elseif (!empty($webinar)) {
-      $url = $settings['base_url'] . "/webinars/".$webinar;
+      $url = "webinars/$webinar";
       $eventType = 'Webinar';
     } else {
       return [null, null, null];
     }
-    $token = $object->createJWTToken($accountId);
-    $response = Zttp::withHeaders([
-      'Content-Type' => 'application/json;charset=UTF-8',
-      'Authorization' => "Bearer $token"
-    ])->get($url);
-    $result = $response->json();
+
+    [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($accountId, $url);
+
+    if (empty($result['join_url'])) {
+      Civi::log()->warning("ncn-civi-zoom: AddToZoom: join_url for $url was empty");
+      return [null, null, null];
+    }
+
     $joinUrl = $result['join_url'];
     $registrationUrl = $result['registration_url'];
     $password = isset($result['password'])? $result['password'] : '';
@@ -217,8 +200,6 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 
     $object = new CRM_CivirulesActions_Participant_AddToZoom;
     $url = CiviZoomUtils::convertEntityToURL($params['entity']) . '/' . $params['entityID'];
-
-    $token = $object->createJWTToken($params["account_id"]);
 
     // Additional Check by user_id if configured in settings
     $userID = CRM_Utils_Array::value('user_id', $settings);
@@ -239,7 +220,6 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
     }
 
     [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($params['account_id'], $url);
-    // CRM_Core_Error::debug_var('checkEventWithZoom response', $result);
 
     if ($isResponseOK) {
       if(!empty($result['registration_url'])){
@@ -294,24 +274,20 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
     $settings = CiviZoomUtils::getZoomSettings();
     CiviZoomUtils::checkPageSize($pageSize);
     if(!empty($meetingId)){
-      $url = $settings['base_url'] . "/meetings/".$meetingId.'/registrants?&page_size='.$pageSize;
+      $url = "meetings/$meetingId/registrants?page_size=$pageSize";
     } elseif (!empty($webinarId)) {
-      $url = $settings['base_url'] . "/webinars/".$webinarId.'/registrants?&page_size='.$pageSize;
+      $url = "webinars/$webinarId/registrants?page_size=$pageSize";
     }
-    $page = 1;
-    $token = $object->createJWTToken($accountId);
+
     $result = [];
+    $page = 1;
     $next_page_token = null;
+
     do {
-      $fetchUrl = $url.$next_page_token;
-      $token = $object->createJWTToken($accountId);
-      $response = Zttp::withHeaders([
-        'Content-Type' => 'application/json;charset=UTF-8',
-        'Authorization' => "Bearer $token"
-      ])->get($fetchUrl);
-      $result = $response->json();
-      //CRM_Core_Error::debug_var('getZoomRegistrants result', $result);
-      if(!empty($result['registrants'])){
+      $fetchUrl = $url . $next_page_token;
+      [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($accountId, $fetchUrl);
+
+      if (!empty($result['registrants'])) {
         $zoomRegistrantsList = array_merge($zoomRegistrantsList, $result['registrants']);
       }
       $next_page_token = '&next_page_token='.$result['next_page_token'];
@@ -332,52 +308,37 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
       return $returnZoomList;
     }
     $url = $array_name = $key_name = '';
+    $urls = [];
     $accountId = CiviZoomUtils::getZoomAccountIdByEventId($eventId);
-    $token = $object->createJWTToken($accountId);
     $settings = CiviZoomUtils::getZoomSettings();
     CiviZoomUtils::checkPageSize($pageSize);
 
     if (!empty($meetingId)) {
-      //$url = $settings['base_url'] . "/past_meetings/$meetingId/participants?&page_size=".$pageSize;
-      $urls = [];
       $array_name = 'participants';
       $key_name = 'user_email';
 
       // Get meeting instances
-      $instances_url = $settings['base_url'] . "/past_meetings/$meetingId/instances";
-      $instances_response = Zttp::withHeaders([
-        'Content-Type' => 'application/json;charset=UTF-8',
-        'Authorization' => "Bearer $token"
-      ])->get($instances_url);
-      $instances_result = $instances_response->json();
+      [$isResponseOK, $instances_result] = CiviZoomUtils::zoomApiRequest($accountId, "past_meetings/$meetingId/instances");
 
       foreach ($instances_result['meetings'] as $key => $instance) {
-        $urls[] = $settings['base_url'] . "/past_meetings/" . urlencode(urlencode($instance['uuid'])) . "/participants?&page_size=".$pageSize;
+        $urls[] = "past_meetings/" . urlencode(urlencode($instance['uuid'])) . "/participants?&page_size=".$pageSize;
       }
    }
    elseif (!empty($webinarId)) {
-     $url = $settings['base_url'] . "/past_webinars/$webinarId/absentees?&page_size=".$pageSize;
+     $url = "past_webinars/$webinarId/absentees?&page_size=$pageSize";
      $urls = [$url];
      $array_name = 'absentees';
      $key_name = 'email';
    }
 
-   foreach($urls as $key => $url) {
-     //Civi::log()->warning(print_r($url, 1));      
+   foreach ($urls as $key => $url) {
      $result = [];
      $next_page_token = null;
      do {
-       $fetchUrl = $url.$next_page_token;
-       $token = $object->createJWTToken($accountId);
-       $response = Zttp::withHeaders([
-         'Content-Type' => 'application/json;charset=UTF-8',
-         'Authorization' => "Bearer $token"
-       ])->get($fetchUrl);
-       $result = $response->json();
-       //Civi::log()->warning('zoom absentees result: '.var_export($result,true));
-       // CRM_Core_Error::debug_var('zoom result', $result);
+       $fetchUrl = $url . $next_page_token;
+       [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($accountId, $fetchUrl);
 
-       // [SB]: cam/cam-civicrm#138 Zoom Webinars returns registrants so test for absentees and then registrants
+       // Zoom Webinars returns registrants so test for absentees and then registrants
        if (!isset($result[$array_name]) && isset($result['registrants'])) {
          $array_name = 'registrants';
        }
@@ -419,29 +380,24 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
     CiviZoomUtils::checkPageSize($pageSize);
     if (!empty($meetingId)){
       // Calling Meeting participants report api
-      $url = $settings['base_url'] . "/report/meetings/$meetingId/participants?&page_size=".$pageSize;
+      $url = "report/meetings/$meetingId/participants?&page_size=$pageSize";
       $array_name = 'participants';
       $key_name = 'user_email';
     } elseif (!empty($webinarId)) {
      // Calling Webinar absentees api
-     $url = $settings['base_url'] . "/past_webinars/$webinarId/absentees?&page_size=".$pageSize;
+     $url = "past_webinars/$webinarId/absentees?&page_size=$pageSize";
      $array_name = 'absentees';
      $key_name = 'email';
    }
-   $token = $object->createJWTToken($accountId);
 
    $result = [];
    $next_page_token = null;
+
    do {
      $fetchUrl = $url.$next_page_token;
-     $token = $object->createJWTToken($accountId);
-     $response = Zttp::withHeaders([
-       'Content-Type' => 'application/json;charset=UTF-8',
-       'Authorization' => "Bearer $token"
-     ])->get($fetchUrl);
-     $result = $response->json();
-     CRM_Core_Error::debug_var('getZoomParticipantsData zoom result', $result);
-     if (!empty($result[$array_name])){
+     [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($accountId, $fetchUrl);
+
+     if (!empty($result[$array_name])) {
        $list = $result[$array_name];
        foreach ($list as $item) {
          $returnZoomList[$item[$key_name]][] = $item;
@@ -452,31 +408,25 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
 
    if (!empty($webinarId)) {
      // Calling Webinar participants report api also
-     $url = $settings['base_url'] . "/report/webinars/$webinarId/participants?&page_size=".$pageSize;
+     $url = "report/webinars/$webinarId/participants?&page_size=$pageSize";
      $array_name = 'participants';
      $key_name = 'user_email';
-     $token = $object->createJWTToken($accountId);
      $result = [];
      $next_page_token = null;
-     do {
-       $fetchUrl = $url.$next_page_token;
-       $token = $object->createJWTToken($accountId);
-       $response = Zttp::withHeaders([
-         'Content-Type' => 'application/json;charset=UTF-8',
-         'Authorization' => "Bearer $token"
-       ])->get($fetchUrl);
-       $result = $response->json();
 
-       // [SB] cam/cam-civicrm#138 Switch over to registrants b/c zoom is returning that as the array key
+     do {
+       $fetchUrl = $url . $next_page_token;
+       [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($accountId, $fetchUrl);
+
+       // Switch over to registrants b/c zoom is returning that as the array key
        if (empty($result[$array_name]) && !empty($result['registrants'])) {
          $array_name = 'registrants';
        }
 
-       CRM_Core_Error::debug_var('getZoomParticipantsData zoom result', $result);
        if (!empty($result[$array_name])) {
          $list = $result[$array_name];
          foreach ($list as $item) {
-           // [SB] Webinars seem to be returning email key not user_email
+           // Webinars seem to be returning email key not user_email
            if (!empty($item['user_email'])) {
              $returnZoomList[$item['user_email']][] = $item;
            } elseif (!empty($item['email'])) {
