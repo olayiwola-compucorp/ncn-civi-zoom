@@ -364,15 +364,8 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       ];
       return $result;
     }
-    $settings = CRM_NcnCiviZoom_Utils::getZoomSettings($id);
-    if(empty($settings['base_url'])){
-      $result = [
-        'message' => 'Base url is missing',
-        'type' => 'alert'
-      ];
-      return $result;
-    }
 
+    $settings = CRM_NcnCiviZoom_Utils::getZoomSettings($id);
     $url = $settings['base_url'] . "/report/daily";
     $token = self::createOAuthToken($id);
 
