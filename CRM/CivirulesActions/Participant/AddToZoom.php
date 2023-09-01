@@ -32,7 +32,7 @@ class CRM_CivirulesActions_Participant_AddToZoom extends CRM_Civirules_Action{
    * @return string The event's webinar id
    */
   private function getWebinarID($event) {
-    $result;
+    $result = null;
     $customField = CiviZoomUtils::getWebinarCustomField();
     try {
       $apiResult = civicrm_api3('Event', 'get', [
