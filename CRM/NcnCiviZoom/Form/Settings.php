@@ -12,6 +12,7 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
 
   public $_id = NULL;
   public $_act = NULL;
+  public string $zoomName;
 
   public function preProcess() {
     CRM_Utils_System::setTitle(ts("Zoom Account Settings"));
@@ -185,7 +186,7 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
     //Set default Values
     $this->setDefaults($defaults);
 
-    $this->addFormRule(array('CRM_NcnCiviZoom_Form_Settings', 'formRule'));
+    $this->addFormRule([$this, 'formRule']);
     parent::buildQuickForm();
   }
 
@@ -394,7 +395,7 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
     // Check if we have a valid token
     // They expire after 1h and cannot be renewed
     $tokenRecord = \Civi\Api4\OAuthSysToken::get(false)
-      ->addWhere('grant_type', '=', 'client_credentials')
+      ->addWhere('grant_type', '=', 'account_credentials')
       ->addWhere('client_id', '=', $settings['oauth_client_id'])
       ->addOrderBy('expires', 'DESC')
       ->execute()
