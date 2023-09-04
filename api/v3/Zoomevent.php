@@ -59,6 +59,7 @@ function civicrm_api3_zoomevent_generatezoomattendance($params) {
 // I would expect today's events to be returned but then they might not be finished
   $apiResult = civicrm_api3('Event', 'get', [
     'sequential' => 1,
+		'limit' => 0,
     'end_date' => ['BETWEEN' => [$pastDate, $currentDate]],
   ]);
 	$allEvents = $apiResult['values'];

@@ -274,11 +274,13 @@ class CRM_NcnCiviZoom_Utils {
 
     $apiParams = array(
       'start_date' => ['>=' => $today],
+      'limit' => 0,
     );
     $startDate = civicrm_api3('Event', 'get', $apiParams);
 
     $apiParams = array(
       'end_date' => ['>=' => $today],
+      'limit' => 0,
     );
     $endDate = civicrm_api3('Event', 'get', $apiParams);
 
@@ -1215,6 +1217,7 @@ class CRM_NcnCiviZoom_Utils {
         'is_reserved' => 1,
         'is_counted' => 0,
         'visibility_id' => "admin",
+        'weight' => 100
       ]);
     }
     $tableName = CRM_NcnCiviZoom_Constants::ZOOM_REGISTRANTS_TABLE_NAME;
