@@ -264,8 +264,8 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
       if ($this->_act == CRM_Core_Action::UPDATE || $this->_act == CRM_Core_Action::ADD) {
         // Create or update the existing settings
         $oauth_client_id = $values['oauth_client_id'];
-        $account_id = $values['account_id'];
-        $zoom_name = $values['name'];
+        $account_id = trim($values['account_id']);
+        $zoom_name = trim($values['name']);
         $user_id = $values['user_id'];
 
         $queryParams = [
@@ -391,6 +391,11 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
 
     $settings = CRM_NcnCiviZoom_Utils::getZoomSettings($id);
 
+    // Check for incomplete configurations, ex: when upgrading
+    if (empty($settings['oauth_client_id'])) {
+      return null;
+    }
+
     // Check if we have a valid token
     // They expire after 1h and cannot be renewed
     $tokenRecord = \Civi\Api4\OAuthSysToken::get(false)
@@ -414,18 +419,24 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
     /** @var OAuthTokenFacade $tokenService */
     $tokenService = \Civi::service('oauth2.token');
 
-    $tokenRecord = $tokenService->init(
-      [
-        'client' => $client,
-        // 'scope' => 'foo',
-        'tag' => NULL,
-        'storage' => 'OAuthSysToken',
-        'grant_type' => 'account_credentials',
-        'cred' => ['account_id' => $settings['account_id']],
-      ]
-    );
+    try {
+      $tokenRecord = $tokenService->init(
+        [
+          'client' => $client,
+          // 'scope' => 'foo',
+          'tag' => NULL,
+          'storage' => 'OAuthSysToken',
+          'grant_type' => 'account_credentials',
+          'cred' => ['account_id' => $settings['account_id']],
+        ]
+      );
 
-    return $tokenRecord;
+      return $tokenRecord;
+    }
+    catch (Exception $e) {
+      Civi::log()->error('NcnCiviZoom: tokenService failed to get a token from Zoom: ' . $e->getMessage());
+      CRM_Core_Session::setStatus('Failed to contact the Zoom API: ' . $e->getMessage(), '', 'error');
+    }
   }
 
 }
