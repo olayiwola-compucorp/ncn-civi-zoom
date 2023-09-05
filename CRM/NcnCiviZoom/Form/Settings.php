@@ -366,7 +366,6 @@ class CRM_NcnCiviZoom_Form_Settings extends CRM_Core_Form {
     }
 
     $settings = CRM_NcnCiviZoom_Utils::getZoomSettings($id);
-    $url = $settings['base_url'] . "/report/daily";
     $token = self::createOAuthToken($id);
 
     [$isResponseOK, $result] = CiviZoomUtils::zoomApiRequest($id, 'users/me/meetings');
