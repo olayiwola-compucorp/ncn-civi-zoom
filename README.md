@@ -1,39 +1,45 @@
-# ncn-civi-zoom
-Civirules Conditions/Actions that talk with Zoom developed for NCN.
+# CiviCRM Zoom Integration by NCN
 
-# What it does
-This extension will connect CiviEvents with Zoom, allowing registrations for zoom events to be captured in your CiviCRM install via your website. This has a multitude of benefits, including GDPR compliance, using Zooms workflow, removing the need to manually export/import as well as being able to manage events in the same way you would any other CiviCRM events. This will also pull the registrants' details for the upcoming zoom based events and update them into the 'Event Zoom Notes' field of each event.
+Civirules Conditions/Actions that talk with Zoom developed for NCN by Veda Consulting.
 
-# Symbiotic fork
-* Correct an entity name that broke an api call
+## What it does
+
+When users register to a CiviCRM Event, they will automatically be registered to the associated Zoom event (meeting or webinar). This has a multitude of benefits, including GDPR compliance and managing pricing/payment directly in CiviCRM. It also removes the need to manually export/import data between Zoom and CiviCRM, as well as being able to manage events in the same way you would any other CiviCRM events. This will also pull the registrants' details for the upcoming zoom based events and update them into the 'Event Zoom Notes' field of each event.
+
+## Symbiotic fork
+
+This extension has been forked by Coop Symbiotic so that it works with the OAuth server-to-server Zoom API, instead of using JWT authentication. JWT was removed by Zoom in September 2023.
+
+We also fixed a few minor issues:
+
+* Fixed an entity name that broke a Zoom API call
 * Custom fields (zoom register link et participant zoom registrant id) to produce a cancel link to include in event reminders {event.custom_xx}/success?act=cancel&user_id={participant.custom_yy}
-* Syncronize zoom cancellations back to CiviEvents and update participant status
+* Syncronize Zoom cancellations back to CiviEvents and update participant status
 
 ## Requirements
 
-* PHP v7.0+
-* CiviCRM 5.0+
+* PHP v7.4+
+* CiviCRM 5.60+
 * CiviRules extension
 * A Paid Zoom Account
 
-## Conflict with Drupal Devel Module 7.x-1.5
-
-Fixed a known conflict with Drupal Devel Module 7.x-1.5 ([2559061](https://www.drupal.org/project/devel/issues/2559061))
+If using Drupal7, there was a known conflict with Drupal Devel Module 7.x-1.5 ([2559061](https://www.drupal.org/project/devel/issues/2559061)).
 
 ## Installation
 
-A helper Youtube installation video can be found [here](https://youtu.be/6rta9V3J7yc)
+A helper Youtube installation video can be found [here](https://youtu.be/6rta9V3J7yc) - please note that it covers the old JWT authentication, but the OAuth config is similar.
 
 Follow the Setup guide below, the key steps are;
 
 * Create a connector in Zoom (Oauth server-to-server App)
 * Create relevant custom fields in CiviCRM for Events to hold zoom information
+* Enable the CiviCRM OAuth Client extension. It is part of CiviCRM Core, but most be enabled from CiviCRM > Administer > System Settings > Manage Extensions.
 * Install the CiviCRM Zoom Extension. More details [here](https://docs.civicrm.org/sysadmin/en/latest/customize/extensions/#installing-a-new-extension) about installing extensions in CiviCRM.
 * Connect CiviCRM to Zoom via settings
 
 Following this you will then have the option, per event, to pass information over to zoom on registration of participants, either online or offline.
 
-All of the setup and useage steps are outlined below.
+All of the setup and usage steps are outlined below.
 
 ## Setup
 
@@ -50,16 +56,20 @@ Create custom fields against the Event entity (you can select which types of eve
 Also note we would recommend turning off the public setting on the custom field group as you probably dont want the IDs being exposed publicly on information pages.
 
 The fields needed are
+
 #### Zoom Account ID:
-*As the extension supports multiple zoom accounts in a single installation this field will store to which zoom account the meeting or webinar belongs to.
+
+* As the extension supports multiple zoom accounts in a single installation this field will store to which zoom account the meeting or webinar belongs to.
 * Please ensure that this custom field is set as **Data Type** to _Integer_ and **Field Type** to _Text_ as this field will only hold small natural numbers.
 * Please ensure that this custom field is set as **View Only?** to _TRUE_ as its value is set from the 'zoom_account_list' and we don't want end users mistakenly entering invalid values.
 
 #### Zoom Webinar ID
+
 * Will hold Zoom Webinar IDs.
 * Please ensure that this custom field is set as **Data Type** to _Number_ and **Field Type** to _Text_ as these fields will only contain large numbers (spaces in meeting numbers are trimmed before saving).
 
 #### Zoom Meeting ID
+
 * Will hold the Zoom Meeting ID.
 * Please ensure that this custom field is set as **Data Type** to _Number_ and **Field Type** to _Text_ as these fields will only contain large numbers (spaces in meeting numbers are trimmed before saving).
 
@@ -67,17 +77,26 @@ The fields needed are
 
 More details [here](https://docs.civicrm.org/sysadmin/en/latest/customize/extensions/#installing-a-new-extension) about installing extensions in CiviCRM.
 
+### Sign into CiviCRM and configure the OAuth client settings
+
+* Go to Administer > System Settings > Manage Extensions
+* Enable the "OAuth Client" extension
+* Then go to the OAuth Client page under Administer > System Settings > OAuth
+* There should be a few providers listed, including "Zoom". Click on "Zoom".
+* Enter the "Client ID (public)" and "Client Secret". These are 2 of the 3 values that were available from your Zoom account, when setting up the OAuth server-to-server credentials.
+* Click Save
+
+Ignore the "Add (Auth Code)" button. As tempting as it is, it is not relevant here and it will not work.
+
 ### Sign into CiviCRM and configure the Zoom settings
+
 * Install the extension
 * Navigate  to the zoom settings as **Administer >> Zoom Settings >> Zoom Accounts Settings**.
 * Create an entry for the zoom account (Note that the extension supports multiple Accounts)
 ![Screenshot of add new zoom account button](images/add-new-zoom-account.jpg)
 
-* On clicking the **Add New zoom account** button you'll be taken to a page where you need to enter the details of the new zoom account. Note the name is purely an internal identifier, in the case of multiple zoom accounts it can be use to easily differentiate the options.
+* On clicking the **Add New zoom account** button you'll be taken to a page where you need to enter the details of the new zoom account. Note the name is purely an internal identifier, in the case of multiple zoom accounts it can be use to easily differentiate the options. Select the configured OAuth Client from the list, and enter the Account ID (this is the 3rd credential from your Zoom account setup).
 ![Screenshot of add new zoom account settings page](images/add-new-zoom-account-setting-page.jpg)
-
-* Along with that you also need to enter the 'Base url' in the same settings page. Note the Base URL should be set to https://api.zoom.us/v2 if the extension doesn't automatically set it.
-![Screenshot of add common zoom settings](images/add-common-zoom-settings.jpg)
 
 * Navigate  to the zoom sync data settings as **Administer >> Zoom Settings >> Zoom Data Sync Settings**.
 * This page shows the list  of fields available in the zoom api for a Meeting or a Webinar.
