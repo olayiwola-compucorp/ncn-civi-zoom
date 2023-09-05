@@ -1,6 +1,6 @@
-# CiviCRM Zoom Integration by NCN
+# CiviCRM Zoom Integration by NCN (Symbiotic fork)
 
-Civirules Conditions/Actions that talk with Zoom developed for NCN by Veda Consulting.
+Civirules Conditions/Actions that talk with Zoom, initially developed for NCN by Veda Consulting. Forked by Coop Symbiotic to add Oauth API support and minor fixes.
 
 ## What it does
 

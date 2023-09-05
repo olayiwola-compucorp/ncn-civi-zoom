@@ -2,22 +2,22 @@
 <extension key="ncn-civi-zoom" type="module">
   <file>ncn_civi_zoom</file>
   <name>NCN Civirules Actions for Zoom</name>
-  <description>This module provides Civirules Zoom Actions for Events, including connecting CiviCRM to zoom.</description>
+  <description>Provides Zoom integration for CiviCRM (Symbiotic fork)</description>
   <maintainer>
-    <author>Rupert Amodia</author>
-    <email>hello@vedaconsulting.co.uk</email>
+    <author>Mathieu Lu</author>
+    <email>mathieu@symbiotic.coop</email>
   </maintainer>
-  <releaseDate>2021-04-13</releaseDate>
-  <version>2.4</version>
+  <releaseDate>2023-09-05</releaseDate>
+  <version>3.0</version>
   <requires>
     <ext>org.civicoop.civirules</ext>
     <ext>oauth-client</ext>
   </requires>
-  <develStage>beta</develStage>
+  <develStage>stable</develStage>
   <compatibility>
-    <ver>5.0</ver>
+    <ver>5.60</ver>
   </compatibility>
-  <comments>Made for Nonprofit Centers Network, by KRD</comments>
+  <comments></comments>
   <classloader>
     <psr4 prefix="Civi\" path="Civi"/>
   </classloader>
