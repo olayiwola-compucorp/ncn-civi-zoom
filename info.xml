@@ -1,4 +1,4 @@
-<?xml version="1.1"?>
+<?xml version="1.0"?>
 <extension key="ncn-civi-zoom" type="module">
   <file>ncn_civi_zoom</file>
   <name>NCN Civirules Actions for Zoom</name>
@@ -17,11 +17,18 @@
   <compatibility>
     <ver>5.60</ver>
   </compatibility>
-  <comments></comments>
+  <comments/>
   <classloader>
     <psr4 prefix="Civi\" path="Civi"/>
+    <psr0 prefix="CRM_" path="."/>
   </classloader>
   <civix>
     <namespace>CRM/NcnCiviZoom</namespace>
+    <format>23.02.1</format>
   </civix>
+  <mixins>
+    <mixin>menu-xml@1.0.0</mixin>
+    <mixin>smarty-v2@1.0.1</mixin>
+  </mixins>
+  <upgrader>CRM_NcnCiviZoom_Upgrader</upgrader>
 </extension>
