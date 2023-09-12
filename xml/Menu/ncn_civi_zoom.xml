@@ -1,13 +1,13 @@
 <?xml version="1.0"?>
 <menu>
   <item>
-    <path>civicrm/Zoom/zoomaccounts</path>
+    <path>civicrm/admin/zoomaccounts</path>
     <page_callback>CRM_NcnCiviZoom_Form_Settings</page_callback>
     <title>Settings</title>
     <access_arguments>administer Zoom</access_arguments>
   </item>
   <item>
-    <path>civicrm/Zoom/zoomdatasync</path>
+    <path>civicrm/admin/zoomdatasync</path>
     <page_callback>CRM_NcnCiviZoom_Form_DataSync</page_callback>
     <title>Settings</title>
     <access_arguments>administer Zoom</access_arguments>
