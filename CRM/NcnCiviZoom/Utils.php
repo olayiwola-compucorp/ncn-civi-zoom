@@ -1214,6 +1214,7 @@ class CRM_NcnCiviZoom_Utils {
         'is_reserved' => 1,
         'is_counted' => 0,
         'visibility_id' => "admin",
+        'weight' => 1
       ]);
     }
     $tableName = CRM_NcnCiviZoom_Constants::ZOOM_REGISTRANTS_TABLE_NAME;
