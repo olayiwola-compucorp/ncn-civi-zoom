@@ -189,7 +189,7 @@ class CRM_NcnCiviZoom_Form_DataSync extends CRM_Core_Form {
     CRM_Core_BAO_Setting::setItem($zoomSettings, ZOOM_SETTINGS, 'zoom_settings');
     $result['message'] = ts('Your Settings have been saved');
     $result['type'] = 'success';
-    $redirectUrl    = CRM_Utils_System::url('civicrm/Zoom/zoomdatasync', 'reset=1');
+    $redirectUrl    = CRM_Utils_System::url('civicrm/admin/zoomdatasync', 'reset=1');
 
     CRM_Core_Session::setStatus($result['message'], ts('Zoom Settings'), $result['type']);
     CRM_Utils_System::redirect($redirectUrl);
